@@ -1,0 +1,14 @@
+---
+title: "Publications"
+author: "Luke Noble"
+date: "11/20/2018"
+output: html_document
+bibliography: cemee.bib
+---
+
+
+
+---
+- @Teotonio:2012ei Derivation of the ancestral (A[0]) population and adaptation of replicate populations varying in mating system to the lab environment. 
+- @noble2017polygenicity CeMEE v1. 
+---
