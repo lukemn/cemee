@@ -1,18 +1,24 @@
-## Simple site: Easy websites with GitHub pages
+### CeMEE: Resources for the C. elegans multiparent experimental evolution panel
 
-[Github Pages](https://pages.github.com) provide a simple way to make a
-website using Markdown and git.
 
-This is a minimal tutorial to get started.
+blah blah
 
-View the thing [here](https://kbroman.org/simple_site).
+A [genome browser](https://lukemn.github.io/cemee_jbrowse) is available for querying genetic variants in the panel, haplotype reconstructions, as well as various SNP and haplotype-based statistics. Association statistics will eventually be added.
 
----
+#### RIL metadata
 
-To the extent possible under law,
-[Karl Broman](https://github.com/kbroman)
-has waived all copyright and related or neighboring rights to
-&ldquo;[simple site](https://github.com/kbroman/simple_site)&rdquo;.
-This work is published from the United States.
-<br/>
-[![CC0](https://i.creativecommons.org/p/zero/1.0/88x31.png)](https://creativecommons.org/publicdomain/zero/1.0/)
+Here we summarise the sequencing status of each recombinant inbred line and link to the raw data in [SRA](). 
+
+####Downloads
+
+Haplotype reconstructions.  
+
+Genome sequence data for founders, RILs, populations (bams on NCBI SRA).  
+
+Raw (or, for behavioural data, minimally processed) phenotype data (text files)
+
+#### Publications
+
+
+
+
