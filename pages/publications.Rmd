@@ -1,14 +1,15 @@
 ---
 title: "Publications"
-author: "Luke Noble"
-date: "11/20/2018"
 output: html_document
-bibliography: cemee.bib
+bibliography: /Users/lukenoble/cemee/assets/cemee.bib
 ---
 
 
 
----
-- @Teotonio:2012ei Derivation of the ancestral (A[0]) population and adaptation of replicate populations varying in mating system to the lab environment. 
-- @noble2017polygenicity CeMEE v1. 
----
+* [Teotonio et al.](https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0035811) [-@Teotonio:2012ei] Derivation of the ancestral ([A0]()) population and adaptation of replicate populations varying in mating system to the lab environment for 100 generations. 
+* [Chelo et al.](https://www.nature.com/articles/ncomms3417?origin=ppub) [-@Chelo:2013gf] Testing of frequency-dependent allelic extinction probabilities using two inbred lines derived from [A6140](), one after introgression of an integrated GFP reporter under the *myo-3* promoter.
+* [Chelo & Teotonio](https://onlinelibrary.wiley.com/doi/full/10.1111/j.1558-5646.2012.01744.x) [-@Chelo:2013dq] Individual-level genotyping from dioecious and androdioecious populations to study the mode of selection underlying maintenance of genetic diversity during adaptation.
+* [Theologidis et al.](https://bmcbiol.biomedcentral.com/articles/10.1186/s12915-014-0093-1) [-@Theologidis:2014eo] Testing of hermaphrodite reproductive assurance during adaptation to a novel environment. Mono-, di- and trioecious populations were derived from [A6140]() to lab conditions (Control populations, 68 generations), a gradual increase in [NaCl] (Gradual populations, 68 generations) or a sudden increase in [NaCl] (Sudden populations, 38 generations).
+* [Carvalho et al.](https://bmcevolbiol.biomedcentral.com/articles/10.1186/1471-2148-14-117) [-@Carvalho:2014bg] Evolution of sex allocation in hermaphrodites, using replicates of dioecious and androdioecious populations. 
+* [Chelo et al.]() [-@Chelo:2014fr]
+* [Noble et al.](http://www.genetics.org/content/207/4/1663) [-@noble2017polygenicity] CeMEE v1. Mapping of fertility and worm area on NGM. 
