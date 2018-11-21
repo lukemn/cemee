@@ -4,10 +4,9 @@ title: CeMEE: the C. elegans multiparent experimental evolution panel
 description: Resource page
 ---
 
+blah
 
 # Resources for the C. elegans multiparent experimental evolution panel
-
-blah blah
 
 A [genome browser](https://lukemn.github.io/cemee_jbrowse) is available for querying genetic variants in the panel, haplotype reconstructions, as well as various SNP and haplotype-based statistics. Association statistics will eventually be added.
 
@@ -22,7 +21,7 @@ Contact for problems/questions/suggestions: [Luke M Noble](luke.noble@gmail.com)
 - [Genome browser](https://lukemn.github.io/cemee_jbrowse)
 - [RIL metadata](pages/rilMeta.html)
 - [Downloads](pages/links.html)
-- [Publications](../pages/publications.html)
+- [Publications](pages/publications.html)
 
 ---
 
