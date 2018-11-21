@@ -21,7 +21,7 @@ Contact for problems/questions/suggestions: [Luke M Noble](luke.noble@gmail.com)
 - [Genome browser](https://lukemn.github.io/cemee_jbrowse)
 - [RIL metadata](pages/rilMeta.html)
 - [Downloads](pages/links.html)
-- [Publications](pages/publications.html)
+- [Publications](../pages/publications.html)
 
 ---
 
