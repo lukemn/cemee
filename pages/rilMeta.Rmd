@@ -1,0 +1,16 @@
+---
+title: "RIL metadata"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(DT)
+library(readxl)
+library(kableExtra)
+library(stringr)
+options(knitr.table.format = "html", knitr.kable.NA = '') 
+
+
+datatable(iris)
+```
