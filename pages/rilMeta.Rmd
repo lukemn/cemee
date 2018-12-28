@@ -18,6 +18,11 @@ Basic information for existing RILs (and a few populations). Not all have been s
 meta <- read_excel('~/Documents/cemee/CeMEE_meta.xltm', sheet = 'rilMeta_verbose')
 cryocapcols <- unique(meta$cap)
 meta$cap <- factor(meta$cap, labels = c('green', 'blue', 'grey', 'orange', 'yellow', 'red'))
+meta$plate <- factor(meta$plate)
+meta$col <- factor(meta$col)
+meta$row <- factor(meta$row)
+meta$line <- factor(meta$line)
+
 
 sketch = htmltools::withTags(table(
   class = "compact cell-border hover order-column stripe",
