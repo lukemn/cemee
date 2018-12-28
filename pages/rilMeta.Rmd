@@ -12,10 +12,12 @@ library(stringr)
 options(knitr.table.format = "html", knitr.kable.NA = '') 
 ```
 
-Basic information for each RIL (and a few populations) is below. Note, not all RILs have been sequenced yet, and even fewer have been phenotyped. There's also a more verbose version. 
+Basic information for existing RILs (and a few populations). Not all have been sequenced yet, and fewer have been phenotyped. 
 
 ```{r, echo=F}
 meta <- read_excel('~/Documents/cemee/CeMEE_meta.xltm', sheet = 'rilMeta_verbose')
+cryocapcols <- unique(meta$cap)
+meta$cap <- factor(meta$cap, labels = c('green', 'blue', 'grey', 'orange', 'yellow', 'red'))
 
 sketch = htmltools::withTags(table(
   class = "compact cell-border hover order-column stripe",
@@ -48,13 +50,14 @@ sketch = htmltools::withTags(table(
 ))
 
 datatable(meta, container=sketch,
+          rownames = T,
           options = list(pageLength = 50, autoWidth = TRUE,
                          initComplete = JS(
                            "function(settings, json) {",
                            "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
                            "}"),
-                         columnDefs = list(list(className = 'dt-center', targets=1:21))
+                         columnDefs = list(list(className = 'dt-center', targets=1:ncol(meta)))
                          ), 
           filter='top'
-) %>% formatStyle('cap', backgroundColor = styleEqual(levels = unique(meta$cap), values = paste0('#', unique(meta$cap))))
+) %>% formatStyle('cap', fontSize=0, backgroundColor = styleEqual(levels = unique(meta$cap), values = paste0('#', cryocapcols)))
 ```
