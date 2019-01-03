@@ -3,9 +3,10 @@ layout: page
 title: CeMEE: the C. elegans multiparent experimental evolution panel
 description: Resource page
 ---
-...
 
-### Resources for the C. elegans multiparent experimental evolution panel
+### Resources for the *C. elegans* multiparent experimental evolution panel
+
+This site hosts genotype and phenotype data and associated metadata for the CeMEE panel.
 
 A [genome browser](https://lukemn.github.io/cemee_jbrowse) is available for querying genetic variants in the panel, haplotype reconstructions, as well as various SNP and haplotype-based statistics. Association statistics will eventually be added.
 
@@ -16,7 +17,7 @@ Downloads contains links to various forms of raw (or minimally processed) phenot
 Contact for problems/questions/suggestions: [Luke M Noble](email:luke.noble@gmail.com)
 
 ---
-
+- [People]((pages/people.html))
 - [Genome browser](https://lukemn.github.io/cemee_jbrowse)
 - [RIL metadata](pages/rilMeta.html)
 - [Downloads](pages/links.html)
