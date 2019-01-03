@@ -13,7 +13,7 @@ Downloads contains links to various forms of raw (or minimally processed) phenot
 Contact for problems/questions/suggestions: [Luke M Noble](email:luke.noble@gmail.com)
 
 ---
-- [People]((pages/people.html))
+- [People](pages/people.html)
 - [Genome browser](https://lukemn.github.io/cemee_jbrowse)
 - [RIL metadata](pages/rilMeta.html)
 - [Downloads](pages/links.html)
