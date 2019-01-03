@@ -1,4 +1,4 @@
-#### Resources for the *C. elegans* multiparent experimental evolution panel
+#### *C. elegans* experimental evolution resources
 Go to [the site](http://lukemn.github.io/cemee).
 
 
