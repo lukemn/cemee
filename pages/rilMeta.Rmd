@@ -15,7 +15,7 @@ options(knitr.table.format = "html", knitr.kable.NA = '')
 
 Basic information for CeMEE founders, extant cryopreserved RILs, and a few intermediate populations. Not all RILs or populations have been sequenced yet, and fewer have been phenotyped.
 
-There's also [a more verbose version](rilMeta_verbose.html) with additional sequencing and QC metadata.
+There's also [a more verbose version](rilMeta_verbose.html) with additional sequencing, QC and cryo metadata.
 
 Hover over the columns for more information.
 
