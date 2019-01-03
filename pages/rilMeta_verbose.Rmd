@@ -62,12 +62,12 @@ sketch = htmltools::withTags(table(
       th('read len', title = 'PE read length (dominant sample where >1)'),
       th('v1', title = 'line in CeMEE version 1'),
       th('v2', title = 'line in CeMEE version 2'),
-      th('v2 QC', title = sprintf('Quality control status: PASS, DUP (another closely related line has been retained), LOW COV (<%sx), HET (ref & alt seen at >%s%% of sites with >= 3 reads and mean minor allele proportion > %s', mincov, maxhetfreq*100, maxhetprop),
+      th('v2 QC', title = sprintf('Quality control status: PASS, DUP (another closely related line has been retained), LOW COV (<%sx), HET (ref & alt seen at >%s%% of sites with >= 3 reads and mean minor allele proportion > %s)', mincov, maxhetfreq*100, maxhetprop)),
       th('fert. NGM', title = 'Phenotyped for fertility (number of viable L1s) on NGM. Value is the number of observations (worms) post-QC.'),
       th('fert. NaCl', title = 'Fertility (number of viable L1s) on 300mM NaCl. Value is the number of observations (worms) post-QC.'),
       th('loc. NGM', title = 'Locomotion on NGM. Value is the number of observations (tracks) post-QC.'),
       th('loc. NaCl', title = 'Locomotion on NaCl. Value is the number of observations (tracks) post-QC.'),
-      th('similar lines', title = 'List of lines with >= 90% identity at diallelic markers. Only one of this group is retained in CeMEE v2, based on the amount of phenotyping and then sequence data'))
+      th('similar lines', title = 'List of lines with >= 90% identity at diallelic markers. Only one of this group is retained in CeMEE v2, based on the amount of phenotyping and then sequence data')
     )
   )
 ))

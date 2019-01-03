@@ -13,16 +13,19 @@ library(data.table)
 options(knitr.table.format = "html", knitr.kable.NA = '') 
 ```
 
-Basic information for existing RILs (and a few populations). Not all have been sequenced yet, and fewer have been phenotyped. Hover over the columns for more information.
+Basic information for CeMEE founders, extant cryopreserved RILs, and a few intermediate populations. Not all RILs or populations have been sequenced yet, and fewer have been phenotyped.
 
 There's also [a more verbose version](pages/rilMeta_verbose.html) with additional sequencing and QC metadata.xxx
+
+Hover over the columns for more information.
+
 
 ```{r, echo=F}
 meta <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'rilMeta_verbose')
 cryocapcols <- unique(meta$cap)
 meta$cap <- factor(meta$cap, labels = c('green', 'blue', 'grey', 'orange', 'yellow', 'red'))
 meta <- mutate_at(meta, c('plate', 'row', 'col', 'line', 'pop', 'pop rep', 'G+A0', 'G+A140', 'G inbred', 'line','v1', 'v2', 'v2 QC', 'seq loc', 'seq platform', 'seq year'), factor)
-meta$`seq depth` <- round(meta$`seq depth`, 2)
+meta$`seq depth` <- round(meta$`seq depth`, 1)
 
 # QC column
 maxhetfreq = 0.2
@@ -36,7 +39,7 @@ sketch = htmltools::withTags(table(
   thead(
     tr(
       th('line', title = 'Unique identifier'),
-      th('v2 QC', title = sprintf('Quality control status: PASS, DUP (another closely related line has been retained), LOW COV (<%sx), HET (ref & alt seen at >%s%% of sites with >= 3 reads and mean minor allele proportion > %s', mincov, maxhetfreq*100, maxhetprop)),
+      th('v2 QC', title = sprintf('Quality control status: PASS, DUP (another closely related line has been retained), LOW COV (<%sx), HET (ref & alt seen at >%s%% of sites with >= 3 reads and mean minor allele proportion > %s)', mincov, maxhetfreq*100, maxhetprop)),
       th('pop', title = 'Population'),
       th('pop rep', title = 'Population replicate'),
       th('line #', title = 'Line number'),
