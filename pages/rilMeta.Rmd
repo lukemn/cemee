@@ -9,43 +9,42 @@ library(DT)
 library(readxl)
 library(kableExtra)
 library(stringr)
+library(data.table)
 options(knitr.table.format = "html", knitr.kable.NA = '') 
 ```
 
-Basic information for existing RILs (and a few populations). Not all have been sequenced yet, and fewer have been phenotyped. 
+Basic information for existing RILs (and a few populations). Not all have been sequenced yet, and fewer have been phenotyped. Hover over the columns for more information.
+
+There's also [a more verbose version]((pages/rilMeta_verbose.html)) with additional sequencing and QC metadata.
 
 ```{r, echo=F}
-meta <- read_excel('~/Documents/cemee/CeMEE_meta.xltm', sheet = 'rilMeta_verbose')
+meta <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'rilMeta_verbose')
 cryocapcols <- unique(meta$cap)
 meta$cap <- factor(meta$cap, labels = c('green', 'blue', 'grey', 'orange', 'yellow', 'red'))
-meta <- mutate_at(meta, c('plate', 'row', 'col', 'line', 'pop', 'pop rep', 'G+A0', 'G+A140', 'G inbred'), factor)
+meta <- mutate_at(meta, c('plate', 'row', 'col', 'line', 'pop', 'pop rep', 'G+A0', 'G+A140', 'G inbred', 'line','v1', 'v2', 'v2 QC', 'seq loc', 'seq platform', 'seq year'), factor)
+meta$`seq depth` <- round(meta$`seq depth`, 2)
 
+# QC column
+maxhetfreq = 0.2
+maxhetprop = 0.1
+mincov = 0.1
+
+meta <- meta[,c(5,21,6:8,12,22:25)]
 
 sketch = htmltools::withTags(table(
   class = "compact cell-border hover order-column stripe",
   thead(
     tr(
-      th('plate', title = 'Cryo plate number'),
-      th('row', title = 'Cryo plate row'),
-      th('col', title = 'Cryo plate col'),
-      th('cap', title = 'Cryo vial color'),
       th('line', title = 'Unique identifier'),
+      th('v2 QC', title = sprintf('Quality control status: PASS, DUP (another closely related line has been retained), LOW COV (<%sx), HET (ref & alt seen at >%s%% of sites with >= 3 reads and mean minor allele proportion > %s', mincov, maxhetfreq*100, maxhetprop)),
       th('pop', title = 'Population'),
       th('pop rep', title = 'Population replicate'),
       th('line #', title = 'Line number'),
-      th('G+A0', title = 'Generations of evolution from initial A0 population (excluding inbreeding)'),
-      th('G+A140', title = 'Generations of evolution from A6140 population (excluding inbreeding)'),
-      th('G inbred', title = 'Generations of RIL inbreeding by selfing'),
       th('seq depth', title = 'Sequenced depth (estimated from reads mapped to the center of chromosome I with minimum MQ40)'),
-      th('perc ref/alt', title = 'Percentage of diallelic SNPs at which both the reference and alternate alleles are seen at least once in the RIL sequencing data'),
-      th('minor prop', title = 'Mean proportion of reads showing the minor allele at sites where at least three reads are present and both alleles are seen'),
-      th('seq year', title = 'RIL year of genome sequencing'),
-      th('seq platform', title = 'RIL sequencing platform (Illumina or BGI)'),
-      th('seq loc', title = 'RIL sequencing location (NYU or BGI'),
-      th('read len', title = 'PE read length (dominant sample where >1)'),
-      th('QC', title = 'Quality control status: PASS, DUP, LOW COV'),
-      th('similar lines', title = 'List of lines with >= 90% identity at diallelic markers. Only one of this group is retained in CeMEE v2, based on the amount of phenotyping and then sequence data'),
-      th('pheno', title = 'List of phenotypes measured')
+      th('fert. NGM', title = 'Phenotyped for fertility (number of viable L1s) on NGM. Value is the number of observations (adult hermaphrodites) post-QC.'),
+      th('fert. NaCl', title = 'Fertility (number of viable L1s) on 300mM NaCl. Value is the number of observations (adult hermaphrodites) post-QC.'),
+      th('loc. NGM', title = 'Locomotion on NGM. Value is the number of observations (tracks) post-QC.'),
+      th('loc. NaCl', title = 'Locomotion on NaCl. Value is the number of observations (tracks) post-QC.')
     )
   )
 ))
@@ -53,15 +52,19 @@ sketch = htmltools::withTags(table(
 datatable(meta, 
           container=sketch,
           rownames = F,
-          options = list(pageLength = 30, autoWidth = T, scrollX=T,
+          options = list(pageLength = 25, 
+                         autoWidth = T, 
+                         scrollX=F,
                          initComplete = JS(
                            "function(settings, json) {",
                            "$(this.api().table().header()).css({'background-color': '#000', 'color': '#fff'});",
                            "}"
                          ),
-                         columnDefs = list(list(className = 'dt-center', targets='_all'))
-                         ), 
+                         columnDefs = list(
+                           list(className = 'dt-center', targets='_all'),
+                           list(width = '200px', targets='_all')
+                         )
+          ), 
           filter='top'
-) %>% formatStyle('cap', fontSize=0, backgroundColor = styleEqual(levels = unique(meta$cap), values = paste0('#', cryocapcols))) %>% formatStyle('seq depth', background = styleColorBar(meta$`seq depth`, 'steelblue'))
-
+) %>% formatStyle('seq depth', background = styleColorBar(meta$`seq depth`, 'steelblue'))
 ```
