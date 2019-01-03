@@ -3,7 +3,6 @@ layout: page
 title: CeMEE: the C. elegans multiparent experimental evolution panel
 description: Resource page
 ---
-
 ## Resources for the *C. elegans* multiparent experimental evolution panel
 
 This site hosts genotype and phenotype data and associated metadata for the CeMEE panel.
