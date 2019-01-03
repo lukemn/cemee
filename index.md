@@ -2,7 +2,7 @@
 # Resources for the *C. elegans* multiparent experimental evolution panel
 ============================================================================  
        
-This site hosts genotype and phenotype data and associated metadata for the CeMEE panel.
+This site hosts genotype and phenotype data and associated metadata for the CeMEE RIL panel and evolved populations.
 
 A [genome browser](https://lukemn.github.io/cemee_jbrowse) is available for querying genetic variants in the panel, haplotype reconstructions, as well as various SNP and haplotype-based statistics. Association statistics will eventually be added.
 
