@@ -53,7 +53,8 @@ qca = addtag('DUP', meta$line %in% qc$todrop.nobg[qc$case != 'haplotypeLL'])
 qca <- cbind(qca, addtag('LOW', meta$`seq depth` < mincov))
 qca <- cbind(qca, addtag('HAP', meta$line %in% qc$todrop.nobg[qc$case == 'haplotypeLL']))
 qca <- cbind(qca, addtag('HET', meta$`perc ref/alt` > (maxhetfreq*100) & meta$`prop alt` > maxhetprop))
-meta$`v2 QC` <- 'PASS'
+meta$`v2 QC`[meta$v2==0] <- ''
+meta$`v2 QC`[meta$v2==1] <- 'PASS'
 dropix = apply(qca, 1, function(x) sum(x != 'PASS')>0)
 meta$`v2 QC`[dropix] = unlist(apply(qca[dropix,], 1, function(x) paste0(unique(x[grep('PASS', x, invert = T)]), collapse=',')))
 meta <- meta[,c(1:20,26,21:25)]
