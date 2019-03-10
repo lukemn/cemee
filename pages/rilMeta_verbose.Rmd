@@ -17,12 +17,12 @@ options(knitr.table.format = "html", knitr.kable.NA = '')
 meta <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'rilMeta_verbose')
 cryocapcols <- unique(meta$cap)
 meta$cap <- factor(meta$cap, labels = c('green', 'blue', 'grey', 'orange', 'yellow', 'red'))
-meta <- mutate_at(meta, c('plate', 'row', 'col', 'line', 'pop', 'pop rep', 'G+A0', 'G+A140', 'G inbred', 'line','v1', 'v2', 'v2 QC', 'seq loc', 'seq platform', 'seq year'), factor)
+meta <- mutate_at(meta, c('plate', 'row', 'col', 'line', 'pop', 'pop rep', 'G+A0', 'G+A140', 'G inbred', 'line','v1', 'v2', 'seq loc', 'seq platform', 'seq year'), factor)
 meta$`seq depth` <- round(meta$`seq depth`, 2)
 meta$`perc ref/alt` <- round(meta$`perc ref/alt`, 1)
 meta$`prop alt` <- round(meta$`prop alt`, 2)
 # crop 'similar' column to max 3 lines
-meta$`similar (>90% id)` <- sapply(meta$`similar (>90% id)`, function(x) {
+meta$similar <- sapply(meta$similar, function(x) {
   spl = tstrsplit(x, ',')
   nl = length(spl)
   if(nl>2){
@@ -32,42 +32,55 @@ meta$`similar (>90% id)` <- sapply(meta$`similar (>90% id)`, function(x) {
   }
 })
 
+qc <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'qc', range = "N1:O1000")
 # QC column
 maxhetfreq = 0.2
 maxhetprop = 0.1
 mincov = 0.1
-
+addtag <- function(tag, boolv){
+  o = matrix('PASS', nrow(meta))
+  o[boolv] = tag
+  o
+}
+qca = addtag('DUP', meta$line %in% qc$todrop.nobg[qc$case != 'haplotypeLL'])
+qca <- cbind(qca, addtag('LOW', meta$`seq depth` < mincov))
+qca <- cbind(qca, addtag('HAP', meta$line %in% qc$todrop.nobg[qc$case == 'haplotypeLL']))
+qca <- cbind(qca, addtag('HET', meta$`perc ref/alt` > (maxhetfreq*100) & meta$`prop alt` > maxhetprop))
+meta$`v2 QC` <- 'PASS'
+dropix = apply(qca, 1, function(x) sum(x != 'PASS')>0)
+meta$`v2 QC`[dropix] = unlist(apply(qca[dropix,], 1, function(x) paste0(unique(x[grep('PASS', x, invert = T)]), collapse=',')))
+meta <- meta[,c(1:20,26,21:25)]
 
 sketch = htmltools::withTags(table(
   class = "compact cell-border hover order-column stripe",
   thead(
     tr(
-      th('plate', title = 'Cryo plate number'),
-      th('row', title = 'Cryo plate row'),
-      th('col', title = 'Cryo plate col'),
-      th('cap', title = 'Cryo vial color'),
-      th('line', title = 'Unique identifier'),
-      th('pop', title = 'Population'),
-      th('pop rep', title = 'Population replicate'),
+      th('Plate', title = 'Cryo plate number'),
+      th('Row', title = 'Cryo plate row'),
+      th('Col', title = 'Cryo plate col'),
+      th('Cap', title = 'Cryo vial color'),
+      th('Line', title = 'Unique identifier'),
+      th('Pop', title = 'Population'),
+      th('Pop rep', title = 'Population replicate'),
       th('line #', title = 'Line number'),
       th('G+A0', title = 'Generations of evolution from initial A0 population (excluding inbreeding)'),
       th('G+A140', title = 'Generations of evolution from A6140 population (excluding inbreeding)'),
       th('G inbred', title = 'Generations of RIL inbreeding by selfing'),
-      th('seq depth', title = 'Sequenced depth (estimated from reads mapped to the center of chromosome I with minimum MQ40)'),
-      th('perc ref/alt', title = 'Percentage of diallelic SNPs at which both the reference and alternate alleles are seen at least once in the RIL sequencing data'),
-      th('minor prop', title = 'Mean proportion of reads showing the minor allele at sites where at least three reads are present and both alleles are seen'),
-      th('seq year', title = 'RIL year of genome sequencing'),
-      th('seq platform', title = 'RIL sequencing platform (Illumina or BGI)'),
-      th('seq loc', title = 'RIL sequencing location (NYU or BGI'),
-      th('read len', title = 'PE read length (dominant sample where >1)'),
+      th('Seq depth', title = 'Sequenced depth (estimated from reads mapped to the center of chromosome I with minimum MQ40)'),
+      th('Ref/alt', title = 'Percentage of diallelic SNPs covered by at least three reads at which both the reference and alternate alleles are seen at least once in the RIL sequencing data'),
+      th('Minor prop.', title = 'Mean proportion of reads showing the minor allele at sites where at least three reads are present and both alleles are seen'),
+      th('Seq year', title = 'RIL year of genome sequencing'),
+      th('Seq platform', title = 'RIL sequencing platform (Illumina or BGI)'),
+      th('Seq loc.', title = 'RIL sequencing location (NYU or BGI'),
+      th('Read len', title = 'PE read length (dominant sample where >1)'),
       th('v1', title = 'line in CeMEE version 1'),
       th('v2', title = 'line in CeMEE version 2'),
-      th('v2 QC', title = sprintf('Quality control status: PASS, DUP (another closely related line has been retained), LOW COV (<%sx), HET (ref & alt seen at >%s%% of sites with >= 3 reads and mean minor allele proportion > %s)', mincov, maxhetfreq*100, maxhetprop)),
-      th('fert. NGM', title = 'Phenotyped for fertility (number of viable L1s) on NGM. Value is the number of observations (worms) post-QC.'),
-      th('fert. NaCl', title = 'Fertility (number of viable L1s) on 300mM NaCl. Value is the number of observations (worms) post-QC.'),
-      th('loc. NGM', title = 'Locomotion on NGM. Value is the number of observations (tracks) post-QC.'),
-      th('loc. NaCl', title = 'Locomotion on NaCl. Value is the number of observations (tracks) post-QC.'),
-      th('similar lines', title = 'List of lines with >= 90% identity at diallelic markers. Only one of this group is retained in CeMEE v2, based on the amount of phenotyping and then sequence data')
+      th('v2 QC', title = sprintf('Quality control status: PASS, DUP (another closely related line has been retained), LOW (sequencing coverage <%sx), HET (ref & alt seen at >%s%% of sites with >= 3 reads and mean minor allele proportion > %s)', mincov, maxhetfreq*100, maxhetprop)),
+      th('Fert. NGM', title = 'Phenotyped for fertility (number of viable L1s) on NGM. Value is the number of observations (adult worms) post-QC.'),
+      th('Fert. NaCl', title = 'Phenotyped for fertility (number of viable L1s) on NGM + 305mM NaCl. Value is the number of observations (adult worms) post-QC.'),
+      th('Loco. NGM', title = 'Locomotion on NGM. Value is the number of observations (tracks) post-QC.'),
+      th('Loco. NaCl', title = 'Locomotion on NaCl. Value is the number of observations (tracks) post-QC.'),
+      th('Similar', title = 'List of lines with >= 90% identity at diallelic markers. Only one of this group is retained in CeMEE v2, based on the amount of phenotyping and then sequence data')
     )
   )
 ))
@@ -89,7 +102,7 @@ datatable(meta,
                          )
           ), 
           filter='top'
-) %>% formatStyle('prop alt', background = styleColorBar(meta$`prop alt`, 'firebrick')) %>% formatStyle('similar (>90% id)', fontSize=1) %>%
+) %>% formatStyle('prop alt', background = styleColorBar(meta$`prop alt`, 'firebrick')) %>% formatStyle('similar', fontSize=1) %>%
   formatStyle('cap', fontSize=0, backgroundColor = styleEqual(levels = unique(meta$cap), values = paste0('#', cryocapcols))) %>%
   formatStyle('seq depth', background = styleColorBar(meta$`seq depth`, 'steelblue')) %>%
   formatStyle('perc ref/alt', background = styleColorBar(meta$`perc ref/alt`, 'firebrick'))
