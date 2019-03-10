@@ -24,30 +24,55 @@ Hover over the columns for more information.
 meta <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'rilMeta_verbose')
 cryocapcols <- unique(meta$cap)
 meta$cap <- factor(meta$cap, labels = c('green', 'blue', 'grey', 'orange', 'yellow', 'red'))
-meta <- mutate_at(meta, c('plate', 'row', 'col', 'line', 'pop', 'pop rep', 'G+A0', 'G+A140', 'G inbred', 'line','v1', 'v2', 'v2 QC', 'seq loc', 'seq platform', 'seq year'), factor)
-meta$`seq depth` <- round(meta$`seq depth`, 1)
+meta <- mutate_at(meta, c('plate', 'row', 'col', 'line', 'pop', 'pop rep', 'G+A0', 'G+A140', 'G inbred', 'line','v1', 'v2', 'seq loc', 'seq platform', 'seq year'), factor)
+meta$`seq depth` <- round(meta$`seq depth`, 2)
+meta$`perc ref/alt` <- round(meta$`perc ref/alt`, 1)
+meta$`prop alt` <- round(meta$`prop alt`, 2)
+# crop 'similar' column to max 3 lines
+meta$similar <- sapply(meta$similar, function(x) {
+  spl = tstrsplit(x, ',')
+  nl = length(spl)
+  if(nl>2){
+    sprintf('%s and %s other%s', paste(unlist(spl)[1:2], collapse=','), nl-2, ifelse(nl>3, 's', ''))
+  } else {
+    x
+  }
+})
 
+qc <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'qc', range = "N1:O1000")
 # QC column
 maxhetfreq = 0.2
 maxhetprop = 0.1
 mincov = 0.1
-
+addtag <- function(tag, boolv){
+  o = matrix('PASS', nrow(meta))
+  o[boolv] = tag
+  o
+}
+qca = addtag('DUP', meta$line %in% qc$todrop.nobg[qc$case != 'haplotypeLL'])
+qca <- cbind(qca, addtag('LOW', meta$`seq depth` < mincov))
+qca <- cbind(qca, addtag('HAP', meta$line %in% qc$todrop.nobg[qc$case == 'haplotypeLL']))
+qca <- cbind(qca, addtag('HET', meta$`perc ref/alt` > (maxhetfreq*100) & meta$`prop alt` > maxhetprop))
+meta$`v2 QC` <- 'PASS'
+dropix = apply(qca, 1, function(x) sum(x != 'PASS')>0)
+meta$`v2 QC`[dropix] = unlist(apply(qca[dropix,], 1, function(x) paste0(unique(x[grep('PASS', x, invert = T)]), collapse=',')))
+meta <- meta[,c(1:20,26,21:25)]
 meta <- meta[,c(5,21,6:8,12,22:25)]
 
 sketch = htmltools::withTags(table(
   class = "compact cell-border hover order-column stripe",
   thead(
     tr(
-      th('line', title = 'Unique identifier'),
-      th('v2 QC', title = sprintf('Quality control status: PASS, DUP (another closely related line has been retained), LOW COV (<%sx), HET (ref & alt seen at >%s%% of sites with >= 3 reads and mean minor allele proportion > %s)', mincov, maxhetfreq*100, maxhetprop)),
-      th('pop', title = 'Population'),
-      th('pop rep', title = 'Population replicate'),
-      th('line #', title = 'Line number'),
-      th('seq depth', title = 'Sequenced depth (estimated from reads mapped to the center of chromosome I with minimum MQ40)'),
-      th('fert. NGM', title = 'Phenotyped for fertility (number of viable L1s) on NGM. Value is the number of observations (adult hermaphrodites) post-QC.'),
-      th('fert. NaCl', title = 'Fertility (number of viable L1s) on 300mM NaCl. Value is the number of observations (adult hermaphrodites) post-QC.'),
-      th('loc. NGM', title = 'Locomotion on NGM. Value is the number of observations (tracks) post-QC.'),
-      th('loc. NaCl', title = 'Locomotion on NaCl. Value is the number of observations (tracks) post-QC.')
+      th('Line', title = 'Unique identifier'),
+      th('v2 QC', title = sprintf('Quality control status: PASS, DUP (another closely related line has been retained), LOW (sequencing coverage <%sx), HET (ref & alt seen at >%s%% of sites with >= 3 reads and mean minor allele proportion > %s)', mincov, maxhetfreq*100, maxhetprop)),
+      th('Pop.', title = 'Population'),
+      th('Pop. rep.', title = 'Population replicate'),
+      th('Line number', title = 'Line number'),
+      th('Seq depth', title = 'Sequenced depth (estimated from reads mapped to the center of chromosome I with minimum MQ40)'),
+      th('Fert. NGM', title = 'Phenotyped for fertility (number of viable L1s) on NGM. Value is the number of observations (adult hermaphrodites) post-QC.'),
+      th('Fert. NaCl', title = 'Fertility (number of viable L1s) on 300mM NaCl. Value is the number of observations (adult hermaphrodites) post-QC.'),
+      th('Loco. NGM', title = 'Locomotion on NGM. Value is the number of observations (tracks) post-QC.'),
+      th('Loco. NaCl', title = 'Locomotion on NaCl. Value is the number of observations (tracks) post-QC.')
     )
   )
 ))
