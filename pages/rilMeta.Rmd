@@ -42,7 +42,7 @@ meta$similar <- sapply(meta$similar, function(x) {
 qc <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'qc', range = "N1:O1000")
 # QC column
 maxhetfreq = 0.2
-maxhetprop = 0.1
+maxhetprop = 0.2
 mincov = 0.1
 addtag <- function(tag, boolv){
   o = matrix('PASS', nrow(meta))
@@ -58,6 +58,7 @@ meta$`v2 QC`[meta$v2==1] <- 'PASS'
 dropix = apply(qca, 1, function(x) sum(x != 'PASS')>0)
 meta$`v2 QC`[dropix] = unlist(apply(qca[dropix,], 1, function(x) paste0(unique(x[grep('PASS', x, invert = T)]), collapse=',')))
 meta <- meta[,c(1:20,26,21:25)]
+
 meta <- meta[,c(5,21,6:8,12,22:25)]
 
 sketch = htmltools::withTags(table(

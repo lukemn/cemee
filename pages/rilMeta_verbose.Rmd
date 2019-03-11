@@ -3,7 +3,7 @@ title: "RIL metadata"
 output: html_document
 ---
 
-```{r include=F}
+```{r include=F, echo=F}
 library(dplyr)
 library(DT)
 library(readxl)
@@ -35,7 +35,7 @@ meta$similar <- sapply(meta$similar, function(x) {
 qc <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'qc', range = "N1:O1000")
 # QC column
 maxhetfreq = 0.2
-maxhetprop = 0.1
+maxhetprop = 0.2
 mincov = 0.1
 addtag <- function(tag, boolv){
   o = matrix('PASS', nrow(meta))
@@ -51,6 +51,23 @@ meta$`v2 QC`[meta$v2==1] <- 'PASS'
 dropix = apply(qca, 1, function(x) sum(x != 'PASS')>0)
 meta$`v2 QC`[dropix] = unlist(apply(qca[dropix,], 1, function(x) paste0(unique(x[grep('PASS', x, invert = T)]), collapse=',')))
 meta <- meta[,c(1:20,26,21:25)]
+
+## numbers for CeMEE v2 table 1
+## there are two dupes in cryo (one, CA150L29, in v1/2). leave in sheet, but drop for table
+#meta[which(meta$line %in% names(table(meta$line)[table(meta$line)>1])), c('line', 'v1', 'v2', 'v2 QC')]
+#meta$line[which(meta$line %in% names(table(meta$line)[table(meta$line)>1]))]
+# v2 = subset(meta[-which(meta$line == 'CA150L29')[1],], v2==1 & `v2 QC` == 'PASS'); dim(v2)
+## NB: 9 lines from v1 not in cryo
+# v1 = subset(meta[-which(meta$line == 'CA150L29')[1],], v1==1); dim(v1)
+# table(v1$pop)
+# table(v2$pop, v2$`G+A0`)
+# table(meta$pop, meta$`G+A0`)
+# cryopass = subset(meta[-which(meta$line == 'CA150L29')[1],], `v2 QC`=='PASS' | is.na(`seq depth`)); dim(cryopass)
+# table(cryopass$pop, cryopass$`G+A0`)
+
+## total RILs with any sequencing data, inc. 7 GMs
+#len(table(as.character(subset(meta, !is.na(meta$`seq depth`) & !pop=='Founder')$line)))
+
 
 sketch = htmltools::withTags(table(
   class = "compact cell-border hover order-column stripe",
