@@ -6,7 +6,9 @@ This site hosts genotype and phenotype data and associated metadata for the CeME
 
 A [genome browser](https://lukemn.github.io/cemee_jbrowse) is available for querying genetic variants in the panel, haplotype reconstructions, as well as various SNP and haplotype-based statistics. Association statistics will eventually be added.
 
-RIL metadata tabulates sequencing status and statistics for each recombinant inbred line and population, with links to the raw data in [NCBI SRA](https://www.ncbi.nlm.nih.gov/sra).
+RIL metadata tabulates sequencing status and statistics for each recombinant inbred line and population.
+
+Sequence data for post-QC RILs is available from [NCBI SRA](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA557613/).
 
 Downloads contains links to various forms of raw (or minimally processed) phenotype data, reconstructed haplotypes, and files for use in [R/qtl](http://www.rqtl.org/). 
 
