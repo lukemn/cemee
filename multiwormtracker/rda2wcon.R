@@ -130,7 +130,7 @@ main <- function(cfg, outd, np=1){
       cat(sprintf('converting %s\n', rda))
       
       oi = list(
-        metadata = unb(c(metal, metadata[i,])),
+        metadata = unb(c(metal, metadata[i,], file = rda)),
         units = unitl,
         data = extractRda(f)
       )
@@ -149,7 +149,7 @@ main <- function(cfg, outd, np=1){
 
 cfg = '~/rdas.cfg'
 outd = '~/MWTdata/wcon'
-main(cfg, outd, np=10)
+main(cfg, outd, np=20)
 
 
 makeRdaCfg <- function(){
@@ -184,7 +184,7 @@ makeRdaCfg <- function(){
   rdas$place = 'Paris'
   rdas$place[rdas$year == 2012] = 'Lisbon'
   # sample/type
-  rdas$sample = gsub('L0', '', rdas$id)
+  rdas$sample = rdas$id = gsub('L0$', '', rdas$id)
   rdas$sample_type = NA
   rdas$sample[rdas$id=='N2anc' & !rdas$block %in% c('B302','B305')] = 'N2'
   # reformat
@@ -193,15 +193,15 @@ makeRdaCfg <- function(){
   rdas$sample[ix] <- sprintf('GA%s50%s', substr(rdas$sample[ix], 1, 1), substr(rdas$sample[ix], 2, 5))
   x = "G140A6"; ix = grep(x, rdas$sample)
   rdas$sample[ix] <- sprintf('A6140%s', gsub(x, '', rdas$sample[ix]))
-  
   rdas$sample_type[grep('^PB250', rdas$sample)] <- 'MA line'
   rdas$sample_type[grep('^N2250', rdas$sample)] <- 'MA line'
-  rdas$sample_type[rdas$sample=='PBanc'] = 'MA founder'
   rdas$sample_type[rdas$sample=='N2'] = 'MA founder'
   ix = grep('L', rdas$sample, invert = T); ix = ix[is.na(rdas$sample_type[ix])]
   rdas$sample_type[ix] = 'population'
   cemeeFounders <- sort(c('AB1', 'CB4507', 'CB4855', 'CB4856', 'CB4858', 'MY1', 'MY16', 'JU400', 'JU319', 'RC301', 'PX179', 'N2anc', 'PB306', 'PX174', 'CB4852', 'JU345'))
   rdas$sample_type[rdas$sample %in% cemeeFounders] <- 'founder'
+  rdas$sample[rdas$id=='PBanc'] = 'PB306'
+  rdas$sample_type[rdas$id=='PBanc' & rdas$sample=='PB306'] = 'MA founder'
   rdas$sample_type[is.na(rdas$sample_type)] = 'RIL'
   # Patrick's lines
   rdas$sample_type[rdas$sample == 'CX12311'] = 'NIL'

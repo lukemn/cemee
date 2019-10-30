@@ -143,7 +143,7 @@ main <- function(cfg, np=1){
   o = lapply(1:ndir, function(i) {
     
     diri = blobdir[i]
-    blobsf = Sys.glob(sprintf('%s/*.blobs', diri))[1:4]
+    blobsf = Sys.glob(sprintf('%s/*.blobs', diri))
     pref = ifelse(is.na(prefs[i]), basename(diri), prefs[i])
     outf = sprintf('%s/%s.wcon', blobdir[i], pref)
     osha = sprintf('%s.sha', outf)
