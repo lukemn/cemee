@@ -48,7 +48,17 @@ unb <- function(i){
 }
 
 # common metadata tags
-metal <- list(lab="EEV")
+metal <- list(
+  lab=list(
+    name='EEV', 
+    location='Institut de Biologie de l’École Normale Supérieure, CNRS UMR 8197, Inserm U1024, PSL 7 Research University, F-75005 Paris, France'
+  ),
+  arena=list(
+    style='petri',
+    size=90
+  ),
+  stage='adult'
+)
 
 # common units list for metadata and data
 unitl = lapply(
@@ -58,7 +68,7 @@ unitl = lapply(
        length='mm',
        width='mm',
        food='HT115',
-       software=list(name='MWT', version='1.3.0_r1035')), 
+       software=list(name='MWT', version='1.3.0_r1035', featureID='@MWT')), 
   function(i) unb(i)
 )
 
@@ -148,6 +158,7 @@ main <- function(cfg, np=1){
     outf = sprintf('%s/%s.wcon', blobdir[i], pref)
     osha = sprintf('%s.sha', outf)
     ozip = sprintf('%s.zip', outf)
+    opng = sprintf('%s.png', gsub('_00000k.blobs', '', blobsf[1]))
     
     if(!file.exists(ozip)){
       cat(sprintf('converting %s: %s blobs\n', diri, length(blobsf)))
@@ -160,7 +171,7 @@ main <- function(cfg, np=1){
       
       write_json(oi, outf, pretty=T)
       system(sprintf('shasum %s > %s', outf, osha))
-      zip(ozip, files = c(outf, osha))
+      zip(ozip, files = c(outf, osha, opng))
       system(sprintf('rm %s %s', outf, osha))  
     } else {
       cat(sprintf('skipping %s\n', diri))

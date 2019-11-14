@@ -6,18 +6,6 @@
 
 # time, x/y, angular(turningRate)/area/bias/curve(curvature)/length/speed(velocity)/width (where present, in @MWT slot)
 # see https://github.com/openworm/tracker-commons
-# {
-#   "metadata":{
-#     "who":"Open Worm",
-#     "timestamp":"2016-01-22T17:44:48",
-#     "protocol":"Numbers made up by hand for an example!"
-#   },
-#   "units":{"t":"s", "x":"mm", "y":"mm", "length":"mm", "width":"mm", "outline":"rex"},
-#   "data":[
-#     {"id":"worm1", "t":[0.1], "x":[[0.33, 0.65, 0.8, 1.1, 1.2, ...]], "y":[[2.31, 2.25, 2.0, 1.87, 1.66, ...]], "length":[[40.1]], "width":[[3.1]], "outline":[["11", "911", "118", "MMMeeMUGEEUUFFIIUVIVPc<<c<3<30`02<0228P0"]]},
-#     {"id":"worm1", "t":[0.3], "x":[[0.27, 0.6, 0.75, 1.0, 1.1, ...]], "y":[[2.4, 2.3, 2.07, 1.78, 1.75, ...]]}, "length":[[64.3]], "width":[[13.2]], "outline":[["1040", "2303", "237", "MMGGMGEGEEeEMMEWedPX82080020202280P"]]}
-#     ]
-# }
 
 # pass a config file (delimited, headered) listing per line:
 # (1) a listing of .RData files (Parsed output from Choreography)
@@ -52,7 +40,17 @@ unb <- function(i){
 }
 
 # common metadata tags
-metal <- list(lab="EEV")
+metal <- list(
+  lab=list(
+    name='EEV', 
+    location='Institut de Biologie de l’École Normale Supérieure, CNRS UMR 8197, Inserm U1024, PSL 7 Research University, F-75005 Paris, France'
+  ),
+  arena=list(
+    style='petri',
+    size=90
+  ),
+  stage='adult'
+)
 
 # common units list for metadata and data
 unitl = lapply(
@@ -69,7 +67,8 @@ unitl = lapply(
        food='HT115',
        software=list(name='MWT', 
                      version='1.3.0_r1035',
-                     settings='-S --shadowless -q --plugin Reoutline --plugin Respine -N all'
+                     settings='-S --shadowless -q --plugin Reoutline --plugin Respine -N all',
+                     featureID='@MWT'
        )
   ), 
   function(i) unb(i)
@@ -214,6 +213,10 @@ makeRdaCfg <- function(){
   rdas$pref=sprintf("%s_%s_%s", rdas$sample, rdas$date, rdas$time)
   rdas = rdas[,c('rda','pref','sample','sample_type','who','place','date','time','media')]
   rdas = rdas[order(as.numeric(rdas$date), as.numeric(rdas$time)),]
+  
+  # there is data split by sex for just one block (keep original)
+  rdas = rdas[grep('splitted', rdas$rda, invert=T),]
+  
   fwrite(rdas, '~/rdas.cfg')
   
   # names(bt)[names(bt) %in% metad$data_group_name]
