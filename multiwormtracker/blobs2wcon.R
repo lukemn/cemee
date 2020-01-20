@@ -6,7 +6,7 @@
 # https://github.com/openworm/tracker-commons/blob/master/WCON_format.md
 
 # time, x/y, length/width (in @MWT slot) at minimum
-# by default, filtered to only tracks with data for (11-point) skeleton and outline
+# by default, filtered to only tracks with complete data for (11-point) skeleton and outline
 # pixels converted to mm, assuming 0.026mm per pixel
 # outlines (walks) are unaltered from Rex's compressed pixel-based form:
 # walk = [{px=[x & y of starting pixel, pixel length=1], n=number of pixels in outline, '4'=base64 encoded binary array giving x/y sign from starting pixel}]
@@ -24,17 +24,20 @@
 #   time        HHMMSS
 #   media       NGM/NaCl
 
-# output is written to the each blobs directory, then zipped along with a sha1 hash
+# output is written to the each blobs directory, then zipped along with sample png, and a sha1 hash
 ###################################################################################
 
-require(jsonlite)
-require(data.table)
-require(parallel)
-require(lubridate)
-require(dplyr)
+require(jsonlite, quietly = T, warn.conflicts = F)
+require(data.table, quietly = T, warn.conflicts = F)
+require(parallel, quietly = T, warn.conflicts = F)
+require(lubridate, quietly = T, warn.conflicts = F)
+require(dplyr, quietly = T, warn.conflicts = F)
 
 args = commandArgs(trailingOnly = T)
 cfg  = args[1] # config file 
+np   = ifelse(length(args[1])==2, as.integer(args[2]), 1) # threads
+
+stopifnot(file.exists(cfg))
 
 # pixel > mm conversion
 mmperpixel = 0.026
@@ -47,7 +50,7 @@ unb <- function(i){
   }
 }
 
-# common metadata tags
+# default common metadata tags
 metal <- list(
   lab=list(
     name='EEV', 
@@ -69,7 +72,7 @@ unitl = lapply(
        width='mm',
        food='HT115',
        software=list(name='MWT', version='1.3.0_r1035', featureID='@MWT')), 
-  function(i) unb(i)
+  unb
 )
 
 parseblobs <- function(blobf, filterOnOutline=T){
@@ -124,7 +127,7 @@ parseblobs <- function(blobf, filterOnOutline=T){
   })
   
   if(filterOnOutline){
-    # many lines do not have skeleton/outlines, ignoring them
+    # many lines do not have skeleton/outlines, ignore them
     # lls = unlist(lapply(lines_, function(i) length(strsplit(i, ' ')[[1]])))
     # table(lls)
     isnull = sapply(parsed, function(i) is.null(unlist(i)))
@@ -182,8 +185,9 @@ main <- function(cfg, np=1){
 }
 
 # cfg = '~/Documents/cemee/MWT2WCON/mwt_config'
-cfg = '~/Documents/cemee/MWT2WCON/fm_blob.cfg'
-main(cfg, np=1)
+# cfg = '~/Documents/cemee/MWT2WCON/fm_blob.cfg'
+
+main(cfg, np=np)
 
 makeFMcfg <- function(){
   
