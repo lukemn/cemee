@@ -7,7 +7,8 @@ library(ggpubr)
 library(RColorBrewer)
 library(matrixStats)
  
- 
+## File that pre-process the population data
+
 load("~/PATH/TO/DIR/Cemee_Pop_WI/State_frequencies.RData")
 load("~/PATH/TO/DIR/Cemee_Pop_WI/Analysis_Cemee_Pop_WI.RData")
 

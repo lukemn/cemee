@@ -76,8 +76,6 @@ table(shared_2ndcor$location_label , substring(shared_2ndcor $date_str,1,4))
 
 is_2012 = substring(final_merged_predicted$date_str,1,4)!="2012"	
 
-
-
 for(i in 1:length(vect_P_traits)){
 
 vect_phen= shared_2ndcor[,paste0(vect_P_traits[i],"_pred_01")]
@@ -213,28 +211,6 @@ save(list=ls(),file="~/PATH/TO/DIR/Cemee_Pop_WI/Analysis_Cemee_Pop_WI.RData")
 
 rm(list=ls())
 load("~/PATH/TO/DIR/Cemee_Pop_WI/Analysis_Cemee_Pop_WI.RData")
-
-### Export table files for latex
-
-k=0
-for(vect_pop_id in c("A6140","CA150","CA250","CA350","CA1100","CA2100","CA3100")){
-	k=k+1
-	
-	mat_to_write=matrix(paste0(matrix(round(VCV_mat[[k]]$G1_mat,digits=2))
-,"  [",round(matrix(HPDinterval(VCV_mat[[k]]$VCV_Mat)[1:36,1],ncol=6),digits=2),";",
-round(matrix(HPDinterval(VCV_mat[[k]]$VCV_Mat)[1:36,2],ncol=6),digits=2),"]"),ncol=6)
-	for(i in 1:5) mat_to_write[,i]=paste0(mat_to_write[,i]," & ")
-	mat_to_write[,6]=paste0(mat_to_write[,6]," \\\\ ")
-	mat_to_write=cbind(c("SF & ","SB & " , "FS & " , "FB & " , "BS & " , "BF & "),mat_to_write)
-write.table(mat_to_write,quote=FALSE,sep="\t",row.names=FALSE,col.names=FALSE,file=paste0("~/PATH/TO/DIR/Cemee_Pop_WI/G_mat_tables_for_latex/", vect_pop_id,".txt"))
-
-}
-###
-
-
-
-
-
 ##### Statistics for the paper : first remove duplicates due to herm/male
 is_male=(tstrsplit(final_export$data_id,"_",fixed=TRUE)[[4]]=="male")
 is_male[is.na(is_male)]=FALSE
@@ -281,48 +257,3 @@ df_for_table_export$population2[!df_for_table_export$population2%in%c("pops","WI
 df_for_table_export$population2[df_for_table_export$population2=="pops"]="Population"
 names(df_for_table_export)=c("ID1","ID2","Date","Time")
 write.table(df_for_table_export,file="~/PATH/TO/DIR/Cemee_Pop_WI/Table_Assays.txt",col.names=TRUE,quote=FALSE,row.names=FALSE,sep="\t")
-
-
-par(mfrow=c(3,5))
-for(j1 in 1:5){
-	for(j2 in c(j1+1):6)	{
-
-vect_means=NULL
-for(k in 1:7) vect_means <- c(vect_means,VCV_mat[[k]]$G1_mat[j1,j2])
-vect_low=NULL
-for(k in 1:7) vect_low <- c(vect_low,matrix(HPDinterval(VCV_mat[[k]]$VCV_Mat)[1:36,1],ncol=6)[j1,j2])
-vect_high=NULL
-for(k in 1:7) vect_high <- c(vect_high,matrix(HPDinterval(VCV_mat[[k]]$VCV_Mat)[1:36,2],ncol=6)[j1,j2])
-
-plot(vect_means~seq(0,110,length=7),type="n",bty="n",las=1,ylim=c(min(vect_low),max(vect_high)))
-points(vect_means[c(1,2,5)]~c(0,45,95),type="b")
-points(vect_means[c(1,3,6)]~c(0,50,100),type="b")
-points(vect_means[c(1,4,7)]~c(0,55,105),type="b")	
-
-arrows(0, vect_low[1],0, vect_high[1],code=3,length=.1,angle=90)
-arrows(c(45,50,55), vect_low[2:4],c(45,50,55), vect_high[2:4],code=3,length=.1,angle=90)
-arrows(c(95,100,105), vect_low[5:7],c(95,100,105), vect_high[5:7],code=3,length=.1,angle=90)
-	}
-}
-
-par(mfrow=c(2,3))
-for(j1 in 1:6){
-	j2=j1
-
-vect_means=NULL
-for(k in 1:7) vect_means <- c(vect_means,VCV_mat[[k]]$G1_mat[j1,j2])
-vect_low=NULL
-for(k in 1:7) vect_low <- c(vect_low,matrix(HPDinterval(VCV_mat[[k]]$VCV_Mat)[1:36,1],ncol=6)[j1,j2])
-vect_high=NULL
-for(k in 1:7) vect_high <- c(vect_high,matrix(HPDinterval(VCV_mat[[k]]$VCV_Mat)[1:36,2],ncol=6)[j1,j2])
-
-plot(vect_means~seq(0,110,length=7),type="n",bty="n",las=1,ylim=c(min(vect_low),max(vect_high)))
-points(vect_means[c(1,2,5)]~c(0,45,95),type="b")
-points(vect_means[c(1,3,6)]~c(0,50,100),type="b")
-points(vect_means[c(1,4,7)]~c(0,55,105),type="b")	
-
-arrows(0, vect_low[1],0, vect_high[1],code=3,length=.1,angle=90)
-arrows(c(45,50,55), vect_low[2:4],c(45,50,55), vect_high[2:4],code=3,length=.1,angle=90)
-arrows(c(95,100,105), vect_low[5:7],c(95,100,105), vect_high[5:7],code=3,length=.1,angle=90)
-}
-

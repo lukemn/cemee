@@ -3,6 +3,8 @@ library(data.table)
 library(pracma)
 library(boot)
 
+# Code for the analysis and the production of Fig. B3
+
 final_merged =read.table("~/PATH/TO/DIR/Cemee_Pop_WI/Final_merged_data_NGM.txt",h=TRUE,sep="\t")
 state_freq=read.table("~/PATH/TO/DIR/Cemee_Pop_WI/State_freq_NGM.txt",sep='\t',h=TRUE)
 

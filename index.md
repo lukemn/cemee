@@ -4,9 +4,9 @@
        
 This site hosts genotype and phenotype data and associated metadata for the CeMEE RIL panel and evolved populations.
 
-A [genome browser](https://lukemn.github.io/cemee_jbrowse) is available for querying genetic variants in the panel, haplotype reconstructions, as well as various SNP and haplotype-based statistics. Association statistics will eventually be added.
+A basic [genome browser](https://lukemn.github.io/cemee_jbrowse) is available for querying genetic variants in the panel, as well as various SNP and haplotype-based statistics.
 
-RIL metadata tabulates sequencing status and statistics for each recombinant inbred line and population.
+[RIL metadata](https://lukemn.github.io/cemee/pages/rilMeta.html) tabulates sequencing status and statistics for each recombinant inbred line and population.
 
 Sequence data for post-QC RILs is available from [NCBI SRA](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA557613/).
 

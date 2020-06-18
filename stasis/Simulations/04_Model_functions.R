@@ -17,9 +17,8 @@ angle_eigenV <- function(x, y) {
 
 Produce_Mut_Gen_arrays_for_G_simuls <- function(args) {
 
-	source("Simulations/Model_functions.R", chdir = TRUE)
-
-	A6140_mat <- read.table("~/PATH/TO/DIR/Cemee_Pop_WI/G_mat_for_simulations/A6140.txt", sep = "\t")
+	source('~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Github_Rcodes_AmNat/Simulations/04_Model_functions.R', chdir = TRUE)
+	A6140_mat <- read.table("~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Shared_files/G_mat_for_simulations/A6140.txt", sep = "\t")
 
 	G_init_mat <- as.matrix(A6140_mat/2)
 
@@ -223,7 +222,8 @@ process_output_from_simulations <- function(list_for_processing) {
 
 	output_item <- list_for_processing[[1]]
 
-source('Simulations/Model_functions.R', chdir = TRUE)
+	source('~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Github_Rcodes_AmNat/Simulations/04_Model_functions.R', chdir = TRUE)
+
 
 	#reformat the arrays
 	list_gen_mut_arrays <- list()
@@ -408,7 +408,7 @@ process_output_from_simulations <- function(list_for_processing) {
 
 	output_item <- list_for_processing[[1]]
 
-	source('Simulations/Model_functions.R', chdir = TRUE)
+	source('~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Github_Rcodes_AmNat/Simulations/Model_functions.R', chdir = TRUE)
 
 	#reformat the arrays
 	list_gen_mut_arrays <- list()

@@ -4,9 +4,8 @@ library(MCMCglmm)
 library(stats)
 library(parallel)
 dist_list <- NULL
-
-source('Simulations/Model_functions.R', chdir = TRUE)
-
+source('~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Github_Rcodes_AmNat/Simulations/04_Model_functions.R', chdir = TRUE)
+load("~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Shared_files/Cemee_Pop_WI/Analysis_Cemee_Pop_WI.RData")
 final_param_df <- data.frame(nb_loci_scaling_factor=log(rep(seq(exp(.005), exp(.3), length.out=20),1)),lambda=3,nb_loci=100)
 
 final_param_list=list()
@@ -19,7 +18,7 @@ List_pop_mut_array <-parLapply(clust, final_param_list , Produce_Mut_Gen_arrays_
 list_G_simulated <- parLapply(clust, List_pop_mut_array, produce_G_from_phen_array)
 stopCluster(clust)
 
-	A6140_mat <- read.table("~/PATH/TO/DIR/Cemee_Pop_WI/G_mat_for_simulations/A6140.txt", 
+	A6140_mat <- read.table("~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Shared_files/G_mat_for_simulations/A6140.txt", 
 		sep = "\t")
 	G_init_mat <- as.matrix(A6140_mat/2)
 dist_list=NULL
@@ -48,9 +47,9 @@ summed_diff=c(summed_diff,sum(abs(G_init_mat - list_G_simulated[[i]]$G1_mat/2)))
 plot(summed_diff~dist_df$nb_loci_scaling_factor)
 
 first_estimate <- (-coef(temp_mod)[1]/coef(temp_mod)[2])
-#0.1067742
+#0.1053349
 
-save(list=ls(),file='~/PATH/TO/DIR/Simulations/Final_est_G_scaling_v2.RData')
+save(list=ls(),file='~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Shared_files/Simulations_AmNat/Final_est_G_scaling_v2.RData')
 
 ### We have a first estimate, we want to refine
 
@@ -107,4 +106,7 @@ abline(v=c(-summary(temp_mod2)$coef[,1][2]/summary(temp_mod2)$coef[,1][3]/2),col
 abline(v=c(-summary(temp_mod3)$coef[,1][2]/summary(temp_mod3)$coef[,1][3]/2),col='red')
 
 final_estimate=c(-summary(temp_mod2)$coef[,1][2]/summary(temp_mod2)$coef[,1][3]/2)
-#  0.1086921
+#  0.1108574
+
+
+

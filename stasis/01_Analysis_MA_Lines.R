@@ -137,29 +137,14 @@ PB_mat <- VCV_mat[[2]]
 save(N2_mat ,file="~/PATH/TO/DIR/MA_lines/VCV_mat_N2.RData")
 save(PB_mat ,file="~/PATH/TO/DIR/MA_lines/VCV_mat_PB.RData")
 
-# Statistics for the manuscript
 
-length(unique(N2lines$pop_label))
-length(unique(PBlines$pop_label))
-
-#### 
-
-load("~/PATH/TO/DIR/MA_lines/M_matrices_estimates.RData")
-vect_tnames=c("SF","SB","FS","FB","BS","BF")
-df_for_barplot=data.frame(trait=final_merged[,23],anc_line= final_merged$anc_line,pop_label= final_merged$pop_label,tname= vect_tnames[1])
-k=1
-for(i in 24:28){
+k=0
+for(vect_pop_id in c("N2","PB306")){
 	k=k+1
-	df_for_barplot=rbind(df_for_barplot,
-data.frame(trait=final_merged[,i],anc_line= final_merged$anc_line,pop_label= final_merged$pop_label,tname= vect_tnames[k]))
+write.table(matrix(paste0(round(1000*VCV_mat[[k]]$G1_mat)/1000
+,"  [",round(1000*matrix(HPDinterval(VCV_mat[[k]]$VCV_Mat)[1:36,1],ncol=6))/1000,";",
+round(1000*matrix(HPDinterval(VCV_mat[[k]]$VCV_Mat)[1:36,2],ncol=6))/1000,"]"),ncol=6),quote=FALSE,sep="\t",row.names=FALSE,col.names=FALSE,file=paste0("~/PATH/TO/DIR/MA_lines/M_mat_tables/", vect_pop_id,".txt"))
+
+
 }
-par(mfrow=c(1,1),bty="n",las=1,xaxt="n")
-boxplot(df_for_barplot$trait~ df_for_barplot$anc_line+ df_for_barplot$tname,col=rep(c("darkgreen","magenta")))
-par(xaxt="s")
-axis(side=1,at=c(1.5,3.5,5.5,7.5,9.5,11.5),labels=vect_tnames)
-
-
-
-
-
 

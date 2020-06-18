@@ -1,9 +1,9 @@
 rm(list=ls())
 
-source('Simulations/Model_functions.R', chdir = TRUE)
+source('~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Github_Rcodes_AmNat/Simulations/04_Model_functions.R', chdir = TRUE)
 
 nb_replicates <- 20
-final_estimate = .1086921
+final_estimate = 0.1108574
 
 ## The order of the columns is critical!
 param_df <- data.frame(nb_gen=100,nb_gen_no_mut=rep(c(101),each=nb_replicates),nb_trait=6,nb_loci=100,K=1000,nb_off=10,lambda_pois=3,mu_rate_in=0,nb_loci_scaling_factor= final_estimate,env_var=0,nb_init_alleles=16,max_alleles_per_loci= 16,nb_loci_scaling_factor_mut=NA,run_location="local",MA_line=NA,output_name=c("NA"), stringsAsFactors=FALSE)
@@ -35,7 +35,6 @@ clust <- makeCluster(no_cores)
 list_model_output <- parLapply(clust,list_for_output_processing,process_output_from_simulations)
 stopCluster(clust)
 
-
 G_dist_all=NULL
 for(kkk in 1:length(list_model_output)){
 
@@ -55,7 +54,7 @@ G_mat_final[[kkk]]=Gmat_list[[kkk]][[2]]
 
 }
 
-G_init_mat_path="~/PATH/TO/DIR/Cemee_Pop_WI/G_mat_for_simulations/A6140.txt"
+G_init_mat_path="~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Shared_files/G_mat_for_simulations/A6140.txt"
 A6140_mat <-read.table(G_init_mat_path)/2
 E1_A6=eigen(A6140_mat)$vectors[,1]
 
@@ -72,7 +71,7 @@ G_dist_all$main_End[kkk] <- angle_eigenV(E1_A6,e2)
 
 }
 
-save(list=ls(),file="~/PATH/TO/DIR/Simulations/Main_model_output_list_with_metadata.RData")
+save(list=ls(),file="~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Shared_files/Simulations_AmNat/Main_model_output_list_with_metadata.RData")
 
 
 ####################################################################################
@@ -99,9 +98,10 @@ MA_line <-  as.character(arg[15])
 output_name <-  as.character(arg[16])
 
 
-path_to_functions='Simulations/Model_functions.R'
-G_init_mat_path="~/PATH/TO/DIR/Cemee_Pop_WI/G_mat_for_simulations/A6140.txt"
+path_to_functions='~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Github_Rcodes_AmNat/Simulations/04_Model_functions.R'
+G_init_mat_path="~/Projets_Recherches/Celegans/G_matrix_manuscript/AmNat/Shared_files/G_mat_for_simulations/A6140.txt"
 A6140_mat <-read.table(G_init_mat_path)
+
 
 source(path_to_functions, chdir = TRUE)
 

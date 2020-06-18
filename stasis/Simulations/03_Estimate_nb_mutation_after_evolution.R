@@ -2,15 +2,15 @@
 
 rm(list=ls())
 
-
-##### The model
+##### The model that simulates the random neutral mutations in a population and
+##### then estimates the number of segregating new mutations after 100
+##### generations of drift and their frequencies
 
 nb_replicates=10
-param_df <- data.frame(nb_gen=100,nb_gen_no_mut=rep(c(0),each=nb_replicates),nb_trait=6,nb_loci=100,K=1000,nb_off=10,lambda_pois=3,mu_rate_in=rep(c(1e-2,1e-3,1e-4,1e-5,1e-6,1e-7),each=nb_replicates),nb_loci_scaling_factor= 0,env_var=0,nb_init_alleles=16,max_alleles_per_loci= 100,nb_loci_scaling_factor_mut=NA,run_location="local",MA_line=NA,output_name=c("NA"), stringsAsFactors=FALSE, house_of_cards=NA)
+param_df <- data.frame(nb_gen=100,nb_gen_no_mut=rep(c(0),each=nb_replicates),nb_trait=6,nb_loci=100,K=1000,nb_off=10,lambda_pois=3,mu_rate_in=rep(c(1e-2,1e-3,1e-4,1e-5,1e-6,1e-7),each=nb_replicates),nb_loci_scaling_factor= 0,env_var=0,nb_init_alleles=16,max_alleles_per_loci= 100)
 
 param_list <- list()
 for(i in 1:nrow(param_df)) param_list[[i]] <- param_df[i,]
-
 
 library(parallel)
 no_cores <- 30
@@ -27,13 +27,23 @@ sav_output_mat=output_mat
 
 output_mat=tapply(sav_output_mat[,1],param_df$mu,mean)
 for(i in 2:ncol(sav_output_mat)) output_mat=cbind(output_mat,tapply(sav_output_mat[,i],param_df$mu,mean))
-vect_mu=as.numeric(row.names(output_mat))
-plot(output_mat[,1]~vect_mu,type="b",log="xy",ylim=c(1,5000),xlab=c("Mutation rate"),ylab="Number of new mutations",bty="n",xaxt="n")
+
+write.table(output_mat,file='~/PATH/TO/DIR/Simulations/output_Nb_mut.Rdata')
+
+### The table can be loaded directly to produce the plot of Fig. B4
+
+output_mat =read.table("~/PATH/TO/DIR/Simulations/output_Nb_mut.Rdata")
+nb_replicates=10
+param_df <- data.frame(nb_gen=100,nb_gen_no_mut=rep(c(0),each=nb_replicates),nb_trait=6,nb_loci=100,K=1000,nb_off=10,lambda_pois=3,mu_rate_in=rep(c(1e-2,1e-3,1e-4,1e-5,1e-6,1e-7),each=nb_replicates),nb_loci_scaling_factor= 0,env_var=0,nb_init_alleles=16,max_alleles_per_loci= 100,nb_loci_scaling_factor_mut=NA,run_location="local",MA_line=NA,output_name=c("NA"), stringsAsFactors=FALSE, house_of_cards=NA)
+
+vect_mu=param_df $mu_rate_in
+output_mat=output_mat+1
+plot(output_mat[,1]~vect_mu,type="b",log="xy",ylim=c(1,5000),xlab=c("Mutation rate"),ylab="Number of new mutations",bty="n",xaxt="n",yaxt="n")
 axis(side=1,at=sort(c(1e-2,1e-3,1e-4,1e-5,1e-6,1e-7)))
+axis(side=2,at=c(1,6,51,501,5001),labels=c(0,5,50,500,5000),las=1)
 for(i in 2:5) points(output_mat[,i]~vect_mu,type="b",col=c("black","purple","blue","green","yellow","orange","red")[i])
 legend(1e-7,5e+3,100*c(0.001,0.01,0.05,0.1,0.2,0.5,0.75)[1:5],lwd=2,col=c("black","purple","blue","green","yellow","orange","red")[1:5],title="Min. allele frequency (%)")
 
-write.table(output_mat,file='~/PATH/TO/DIR/Simulations/output_Nb_mut.Rdata')
 
 ######################################################################################
 
@@ -41,7 +51,6 @@ launch_main_model <- function(arg){
 
 library(matrixcalc)
 library(MASS)
-#library(matlib)
 library(matrixStats)
 library(MCMCglmm)
 library(stats)
@@ -71,7 +80,6 @@ produce_Pop_gen_array <- function(nb_loci, K, nb_init_alleles = 16) {
 				temp_freq_all[, assigned_alleles])
 	}
 	temp_freq_all <- cbind(temp_freq_all, 2 * K - rowSums(temp_freq_all))
-
 
 	## We have the frequency of all alleles, we will now create the CHR
 	Pop_gen_array <- array(, c(K, nb_loci, 2))
@@ -186,8 +194,6 @@ nb_mut_detected=c(nb_mut_detected,sum(unlist(lapply(apply(Pop_gen_array,2,table)
 return(nb_mut_detected)
 
 }
-
-
 
 
 

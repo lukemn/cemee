@@ -48,7 +48,7 @@ prepD <- function(ofile = 'lmm_sim.rda'){
     nin = nrow(snpi)
     print(sprintf('iter%s', i))  
     print(table(snpi$chrom))  
-    lds <- parallel::mclapply(split(cbind(snpi, Xi), snpi$chrom), mc.cores = 6, function(i) LDprune(i[,1:2], i[,-(1:2)], window=200, step=100, maxr2 = 0.99))
+    lds <- parallel::mclapply(split(cbind(snpi, Xi), snpi$chrom), mc.cores = 6, function(i) LDprune(i[,1:2], i[,-(1:2)], window=2000, step=1000, maxr2 = 0.99))
     snpi = do.call(rbind, lapply(lds,  '[[', 1))
     Xi = do.call(rbind, lapply(lds,  '[[', 2))
     if(nrow(snpi)==nin){
