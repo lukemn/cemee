@@ -25,7 +25,7 @@ Produces repeatability analysis and Figures 2D and B5.
 Produces Figures 2B and C.
 
 **02g_Male_frequency_and_Inbreeding**
-Analyzes the effect of male frequency in the outbred population and the effect of inbreeding depression on transition rates. Produces Figures 3A and 3B.
+Analyzes the effect of male frequency in the outbred populations and the effect of inbreeding depression on transition rates. Produces Figures 3A and 3B.
 
 **02h_Figure_4**
 Produces Figure 4.
@@ -69,14 +69,14 @@ Estimates male frequency from worm-tracking data and a trained model in **08_xgb
 **09_LD_effects_on_G.R**
 **G**-matrix estimation from genomic data, varying LD weighting, for Figure 6. 
 
-**Simulations**
-This sub-directory contains all the code of the drift simulations.
+**`Simulations`**
+This sub-directory contains code for the drift simulations.
 
 **01_Adjust_G.R**
 Estimate the global scaling parameter that minimizes the difference between the experimental A6140 **G**-matrix and the simulated one (see Appendix A).
 
 **02_Main_model_code.R**
-Run the simulations and process the results to obtain the final **G** matrices after 100 generations.
+Run the simulations and process the results to obtain the final **G**-matrices after 100 generations.
 
 **03_Estimate_nb_mutation_after_evolution.R**
 Simulate random neutral mutations in a population and estimate their numbers and frequencies segregating after 100 generations of drift. Produce Figure B4.
