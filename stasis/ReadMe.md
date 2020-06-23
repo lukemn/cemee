@@ -10,7 +10,7 @@ Loads the transition rates for the CeMEE lines (Final_merged_data_NGM.txt) , per
 Loads the transition rates (Final_merged_data_NGM.txt) and the average observed frequencies of each state (State_freq_NGM.txt) and compares them, producing Figure B3.
 
 **02b_Beta_distributions_with_freq.R**
-Pre-processes the population data to produce the analysis and Figures in files [02c,-j] (hermaphrodites).
+Pre-processes the population data to produce the analysis and Figures in files [02c-j] (hermaphrodites).
 
 **02c_Beta_distributions_with_freq_males.R**
 Pre-processes the population data (males).
@@ -24,7 +24,7 @@ Produces repeatability analysis and Figures 2D and B5.
 **02f_Figure2BC**
 Produces Figures 2B and C.
 
-**02g_Male_frequency_and_Inbreeding
+**02g_Male_frequency_and_Inbreeding**
 Analyzes the effect of male frequency in the outbred population and the effect of inbreeding depression on transition rates. Produces Figures 3A and 3B.
 
 **02h_Figure_4**
@@ -37,7 +37,7 @@ Produces Figure 5.
 Perform data normalization and estimate the **G**-matrix of the founders.
 
 **03b_Gamma_matrix_estimation_with_betas_FigB6**
-Perform estimation of the linear selection coefficients $\beta$ together with the $\gamma$-matrix from the fertility data. Produce Figure B6.
+Perform estimation of the linear selection coefficients $`\beta`$ together with the $\gamma$-matrix from the fertility data. Produce Figure B6.
 
 **03c_Gamma_matrix_estimation.R**
 Estimate the $\gamma$-matrix from the fertility data. Compute the null distribution of selection on the rotated trait $y_i$ using mvnpermute and the *A* matrices of the CeMEE lines. Produce Figures 7A and B7.
