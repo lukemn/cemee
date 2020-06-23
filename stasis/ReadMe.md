@@ -40,7 +40,7 @@ Perform data normalization and estimate the **G**-matrix of the founders.
 Perform estimation of the linear selection coefficients &beta; together with the &gamma;-matrix from the fertility data. Produce Figure B6.
 
 **03c_Gamma_matrix_estimation.R**
-Estimate the $\gamma$-matrix from the fertility data. Compute the null distribution of selection on the rotated trait y<sub>i</sub>; using mvnpermute and the *A* matrices of the CeMEE lines. Produce Figures 7A and B7.
+Estimate the &gamma;-matrix from the fertility data. Compute the null distribution of selection on the rotated trait y<sub>i</sub> using mvnpermute and the *A* matrices of the CeMEE lines. Produce Figures 7A and B7.
 
 **03d_Projection_canonical_axis.R**
 Perform the canonical analysis of the transition rates based on the &gamma;-matrix.
@@ -64,7 +64,7 @@ Model the trait divergence during evolution assuming a Ornstein-Uhlenbeck (OU) p
 Analysis and Figures for Appendix D.
 
 **08_Male_frequency.R**
-Estimates male frequency from worm-tracking data and a trained model in 08_xgb_preds.rda for Figure B1.
+Estimates male frequency from worm-tracking data and a trained model in **08_xgb_preds.rda** for Figure B1.
 
 **09_LD_effects_on_G.R**
 **G**-matrix estimation from genomic data, varying LD weighting, for Figure 6. 
