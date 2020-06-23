@@ -37,7 +37,7 @@ Produces Figure 5.
 Perform data normalization and estimate the **G**-matrix of the founders.
 
 **03b_Gamma_matrix_estimation_with_betas_FigB6**
-Perform estimation of the linear selection coefficients $`\beta`$ together with the $\gamma$-matrix from the fertility data. Produce Figure B6.
+Perform estimation of the linear selection coefficients &beta; together with the $\gamma$-matrix from the fertility data. Produce Figure B6.
 
 **03c_Gamma_matrix_estimation.R**
 Estimate the $\gamma$-matrix from the fertility data. Compute the null distribution of selection on the rotated trait $y_i$ using mvnpermute and the *A* matrices of the CeMEE lines. Produce Figures 7A and B7.
