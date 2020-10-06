@@ -39,7 +39,7 @@ meta$similar <- sapply(meta$similar, function(x) {
   }
 })
 
-qc <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'qc', range = "N1:O1000")
+qc <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'qc', range = "J1:O1000")
 # QC column
 maxhetfreq = 0.2
 maxhetprop = 0.2
@@ -49,9 +49,9 @@ addtag <- function(tag, boolv){
   o[boolv] = tag
   o
 }
-qca = addtag('DUP', meta$line %in% qc$todrop.nobg[qc$case != 'haplotypeLL'])
+qca = addtag('DUP', meta$line %in% qc$todrop[qc$case != 'haplotypeLL'])
 qca <- cbind(qca, addtag('LOW', meta$`seq depth` < mincov))
-qca <- cbind(qca, addtag('HAP', meta$line %in% qc$todrop.nobg[qc$case == 'haplotypeLL']))
+qca <- cbind(qca, addtag('HAP', meta$line %in% qc$todrop[qc$case == 'haplotypeLL']))
 qca <- cbind(qca, addtag('HET', meta$`perc ref/alt` > (maxhetfreq*100) & meta$`prop alt` > maxhetprop))
 meta$`v2 QC` <- ''
 meta$`v2 QC`[meta$v2==1] <- 'PASS'

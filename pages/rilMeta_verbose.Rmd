@@ -32,7 +32,7 @@ meta$similar <- sapply(meta$similar, function(x) {
   }
 })
 
-qc <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'qc', range = "N1:O1000")
+qc <- read_excel('~/Dropbox/CeMEE_v2_meta.xlsx', sheet = 'qc', range = "J1:O1000")
 # QC column
 maxhetfreq = 0.2
 maxhetprop = 0.2
@@ -42,9 +42,9 @@ addtag <- function(tag, boolv){
   o[boolv] = tag
   o
 }
-qca = addtag('DUP', meta$line %in% qc$todrop.nobg[qc$case != 'haplotypeLL'])
+qca = addtag('DUP', meta$line %in% qc$todrop[qc$case != 'haplotypeLL'])
 qca <- cbind(qca, addtag('LOW', meta$`seq depth` < mincov))
-qca <- cbind(qca, addtag('HAP', meta$line %in% qc$todrop.nobg[qc$case == 'haplotypeLL']))
+qca <- cbind(qca, addtag('HAP', meta$line %in% qc$todrop[qc$case == 'haplotypeLL']))
 qca <- cbind(qca, addtag('HET', meta$`perc ref/alt` > (maxhetfreq*100) & meta$`prop alt` > maxhetprop))
 meta$`v2 QC` <- ''
 meta$`v2 QC`[meta$v2==1] <- 'PASS'
@@ -53,10 +53,12 @@ meta$`v2 QC`[dropix] = unlist(apply(qca[dropix,], 1, function(x) paste0(unique(x
 meta <- meta[,c(1:20,26,21:25)]
 
 ## numbers for CeMEE v2 table 1
-## there are two dupes in cryo (one, CA150L29, in v1/2). leave in sheet, but drop for table
-#meta[which(meta$line %in% names(table(meta$line)[table(meta$line)>1])), c('line', 'v1', 'v2', 'v2 QC')]
-#meta$line[which(meta$line %in% names(table(meta$line)[table(meta$line)>1]))]
-# v2 = subset(meta[-which(meta$line == 'CA150L29')[1],], v2==1 & `v2 QC` == 'PASS'); dim(v2)
+## there are two dupes in cryo (CA150L29, CA1100L45), both in v1/2. leave in sheet, but drop for table
+
+# meta[which(meta$line %in% names(table(meta$line)[table(meta$line)>1])), c('line', 'v1', 'v2', 'v2 QC')]
+
+# v2 = subset(meta, v2==1 & `v2 QC` == 'PASS'); dim(v2)
+# v2 = v2[-c(which(v2$line == 'CA150L29')[1],which(v2$line == 'CA1100L45')[1]),]; dim(v2)
 ## NB: 9 lines from v1 not in cryo
 # v1 = subset(meta[-which(meta$line == 'CA150L29')[1],], v1==1); dim(v1)
 # table(v1$pop)
