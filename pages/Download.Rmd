@@ -16,8 +16,8 @@ All processed files are housed in the [CeMEE v2 repo](https://github.com/lukemn/
 * [RIL LD thinned SNV](https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/genotypes) Pre-pruned marker positions for QTL mapping in WS220 and WS245 coordinates, thresholded at $r^2$ < 0.5, 0.9, 0.99. 
 * [RIL haplotypes](https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/haplotypes) [RABBIT](https://github.com/chaozhi/RABBIT) Haplotype reconstructions. There's a single tsv file for each chromosome and population replicate, giving the Viterbi decoded path for RILs as an integer vector (corresponding to the alphanumerically ordered founders). Markers were pruned to remove fully redundant information, and the positions are listed in WS220 coordinates [here](https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/haplotypes/WS220_gtkup_v2_snps_ld0.999.csv.gz). Full marginal reconstruction files are available by request (they're large).  
 
-* [R/qtl files](https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/rqtl) Pre-built csv input for [R/qtl](https://rqtl.org/). 
-* [R/qtl2 files](https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/rqtl) Pre-built zip archive input for [R/qtl2](https://kbroman.org/qtl2/).
+* [R/qtl files](https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/rqtl) Pre-built csv input for [R/qtl](https://rqtl.org/). Available in WS220 and WS245 coordinates, and pre-pruned by LD.
+* [R/qtl2 files](https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/rqtl) Pre-built zip archive input for [R/qtl2](https://kbroman.org/qtl2/). Available in WS220 and WS245 coordinates, and pre-pruned by LD.
 
 
 
