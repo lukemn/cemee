@@ -1,16 +1,41 @@
-# Contributing labs and funding
+---
+title: "Contributing labs and funding"
+output: html_document
+---
 
-- [Ivo Chelo](http://ce3c.ciencias.ulisboa.pt/member/ivomchelo)
+- [Charlie Baer](https://people.clas.ufl.edu/cbaer/about/)  
+```{r, out.width = "200px", echo=F}
+knitr::include_graphics("https://people.clas.ufl.edu/cbaer/files/pike-thru-ice_Toronto_Feb2018_2.jpg")
+```
 
-- [Luke Noble](https://scholar.google.com/citations?user=J1c7JCkAAAAJ&hl=en)
-    -- EC H2020-MSCA-IF-2017-798083
+- [Ivo Chelo](http://ce3c.ciencias.ulisboa.pt/member/ivomchelo)  
+```{r, out.width = "200px", echo=F}
+knitr::include_graphics("https://ce3c.ciencias.ulisboa.pt/fotos/equipa/big1490186269.jpg")
+```
+
+
+- [Luke Noble](https://scholar.google.com/citations?user=J1c7JCkAAAAJ&hl=en)  
+    -- H2020-MSCA-IF-2017-798083  
+```{r, out.width = "200px", echo=F}
+knitr::include_graphics("/Users/noble/Downloads/DSCF5796.jpg")
+```
     
-- [Matt Rockman](https://rockmanlab.bio.nyu.edu/)
-    -- NIH R01GM121828, ANR-74-IDEX-001-02
+- [Matt Rockman](https://rockmanlab.bio.nyu.edu/)  
+    -- NIH R01GM121828, ANR-74-IDEX-001-02  
+```{r, out.width = "200px", echo=F}
+knitr::include_graphics("https://rockmanlab.bio.nyu.edu/wp-content/uploads/2019/10/MVRscruffyheadshot.jpg")
+```
 
-- [Boris Shraiman](https://www.kitp.ucsb.edu/shraiman)
-    -- NSF PHY-1125915
+- [Boris Shraiman](https://www.kitp.ucsb.edu/shraiman)  
+    -- NSF PHY-1125915  
+```{r, out.width = "200px", echo=F}
+knitr::include_graphics("https://www.icts.res.in/sites/default/files/media/people/images/boris_shraiman-grid-img.jpg")
+```
  
-- [Henrique Teotonio](https://www.ibens.ens.fr/spip.php?rubrique28&lang=en)
-    -- ANR-14-ACHN-0032-01, ANR-17-CE02-0017-01, ANR-74-IDEX-001-02
+- [Henrique Teotonio](https://www.ibens.ens.fr/spip.php?rubrique28&lang=en)  
+    -- ANR-14-ACHN-0032-01, ANR-17-CE02-0017-01, ANR-74-IDEX-001-02  
+```{r, out.width = "200px", echo=F}
+knitr::include_graphics("/Users/noble/Downloads/Dk8tIvnXsAAlrM1.jpeg")
+```
+    
  

@@ -366,18 +366,31 @@ summary {
 </div>
 
 
-<p>All processed files are housed in the <a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource">CeMEE v2 repo</a>. Individual links are provided here for convenience:</p>
+<p>All processed genotype and haplotype files are housed in the <a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource">CeMEE v2 repo</a>. Individual links are provided here for convenience:</p>
 <ul>
-<li><p><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_founder_geno.csv.gz">Founder genotypes</a> Founder genotype matrix coded [0,0.5,1] relative to the N2 reference genome, including variants fixed in RILs.</p></li>
-<li><p><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_founder_snps_ws220.csv.gz">Founder WS220 SNV</a> Corresponding information in WS220 coordinates [chromosome, physicalPosition, referenceAllele, alternateAllele, geneticPosition].</p></li>
-<li><p><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_founder_snps_ws245.csv.gz">Founder WS245 SNV</a> Corresponding information in WS245 coordinates [chromosome, physicalPosition, referenceAllele, alternateAllele, geneticPosition].</p></li>
-<li><p><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_RIL_geno.csv.gz">RIL genotypes</a> RIL genotype matrix for segregating diallelic SNVs coded [0,0.5,1] relative to the N2 reference genome.</p></li>
-<li><p><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_RIL_snps_ws220.csv.gz">RIL WS220 SNV</a> Corresponding information in WS220 coordinates [chromosome, physicalPosition, referenceAllele, alternateAllele, geneticPosition].</p></li>
-<li><p><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_RIL_snps_ws245.csv.gz">RIL WS245 SNV</a> Corresponding information in WS245 coordinates [chromosome, physicalPosition, referenceAllele, alternateAllele, geneticPosition].</p></li>
-<li><p><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/genotypes">RIL LD thinned SNV</a> Pre-pruned marker positions for QTL mapping in WS220 and WS245 coordinates, thresholded at <span class="math inline">\(r^2\)</span> &lt; 0.5, 0.9, 0.99.</p></li>
-<li><p><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/haplotypes">RIL haplotypes</a> <a href="https://github.com/chaozhi/RABBIT">RABBIT</a> Haplotype reconstructions. There’s a single tsv file for each chromosome and population replicate, giving the Viterbi decoded path for RILs as an integer vector (corresponding to the alphanumerically ordered founders). Markers were pruned to remove fully redundant information, and the positions are listed in WS220 coordinates <a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/haplotypes/WS220_gtkup_v2_snps_ld0.999.csv.gz">here</a>. Full marginal reconstruction files are available by request (they’re large).</p></li>
-<li><p><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/rqtl">R/qtl files</a> Pre-built csv input for <a href="https://rqtl.org/">R/qtl</a>.</p></li>
-<li><p><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/rqtl">R/qtl2 files</a> Pre-built zip archive input for <a href="https://kbroman.org/qtl2/">R/qtl2</a>.</p></li>
+<li><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_founder_geno.csv.gz">Founder genotypes:</a> Founder genotype matrix coded [0,0.5,1] relative to the N2 reference genome, including variants fixed in RILs.</li>
+<li><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_founder_snps_ws220.csv.gz">Founder WS220 SNV:</a> Corresponding information in WS220 coordinates [chromosome, physicalPosition, referenceAllele, alternateAllele, geneticPosition].</li>
+<li><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_founder_snps_ws245.csv.gz">Founder WS245 SNV:</a> Corresponding information in WS245 coordinates [chromosome, physicalPosition, referenceAllele, alternateAllele, geneticPosition].</li>
+</ul>
+<hr />
+<ul>
+<li><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_RIL_geno.csv.gz">RIL genotypes:</a> RIL genotype matrix for segregating diallelic SNVs coded [0,0.5,1] relative to the N2 reference genome.</li>
+<li><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_RIL_snps_ws220.csv.gz">RIL WS220 SNV:</a> Corresponding information in WS220 coordinates [chromosome, physicalPosition, referenceAllele, alternateAllele, geneticPosition].</li>
+<li><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/supplement/CeMEEv2_RIL_snps_ws245.csv.gz">RIL WS245 SNV:</a> Corresponding information in WS245 coordinates [chromosome, physicalPosition, referenceAllele, alternateAllele, geneticPosition].</li>
+<li><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/genotypes">RIL LD thinned SNV:</a> Pre-pruned marker positions for QTL mapping in WS220 and WS245 coordinates, thresholded at <span class="math inline">\(r^2\)</span> &lt; 0.5, 0.9, 0.99.</li>
+</ul>
+<hr />
+<ul>
+<li><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/rqtl">RIL R/qtl files:</a> Pre-built csv input for <a href="https://rqtl.org/">R/qtl</a>. Available in WS220 and WS245 coordinates, and pre-pruned by LD.</li>
+<li><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/rqtl">RIL R/qtl2 files:</a> Pre-built zip archive input for <a href="https://kbroman.org/qtl2/">R/qtl2</a>. Available in WS220 and WS245 coordinates, and pre-pruned by LD.</li>
+</ul>
+<hr />
+<ul>
+<li><a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/haplotypes">RIL haplotypes:</a> Haplotype reconstructions from <a href="https://github.com/chaozhi/RABBIT">RABBIT</a>. There’s a single tsv file for each chromosome and population replicate, giving the Viterbi-decoded path for RILs as an integer vector (corresponding to the alphanumerically ordered founders). Markers were pruned to remove fully redundant information, and the positions are listed in WS220 coordinates <a href="https://github.com/lukemn/cemee/tree/gh-pages/cemee_v2_resource/haplotypes/WS220_gtkup_v2_snps_ld0.999.csv.gz">here</a>. Full marginal reconstructions are available by request (they’re chunky).</li>
+</ul>
+<hr />
+<ul>
+<li><a href="http://doi.org/10.5281/zenodo.4074963">MWT data:</a> Dump of all <a href="https://www.nature.com/articles/nmeth.1625">Multi-Worm Tracker</a> data related to the CeMEE on the <a href="http://movement.openworm.org/">Open Worm Movement Database</a>. The data are summary statistics from Choreography in <a href="https://github.com/openworm/tracker-commons">WCON</a> format.</li>
 </ul>
 
 
