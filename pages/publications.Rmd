@@ -47,7 +47,7 @@ Expansion of the CeMEE RIL panel, with new populations (**CA[1-3]100**), updated
 * [Mallard, Noble, et al.](https://www.biorxiv.org/content/10.1101/778282v1.full) [-@Mallard2019-qd] 
 Analysis of phenotypic evolution in populations under a constant environment (**CA[1-3]50** and **CA[1-3]100**, derived from **A6140**).
 
-* [Noble et al.] (https://www.g3journal.org/content/10/7/2385.full) [-@Noble2020-st] Interaction between a *col-182* mutation in N2 and standing genetic variation in CeMEE RILs modifies worm locomotion and shape.
+* [Noble et al.](https://www.g3journal.org/content/10/7/2385.full) [-@Noble2020-st] Interaction between a *col-182* mutation in N2 and standing genetic variation in CeMEE RILs modifies worm locomotion and shape.
 
 ***
 
