@@ -13,7 +13,7 @@ bibliography: /Users/noble/Documents/github/cemee/assets/cemee2.bib
 
 * [Chelo & Teotonio](https://onlinelibrary.wiley.com/doi/full/10.1111/j.1558-5646.2012.01744.x) [-@Chelo2013-lp] Individual-level genotyping from dioecious and androdioecious populations derived from **A0** to study the mode of selection underlying maintenance of genetic diversity during adaptation.
 
-* [Chelo et al.](https://www.nature.com/articles/hdy2013100) [-@Chelo2013-ne] The evolution of inbreeding and outbreeding depression under androdioecy and dioecy,using populations derived from **A0**.
+* [Chelo et al.](https://www.nature.com/articles/hdy2013100) [-@Chelo2013-ne] The evolution of inbreeding and outbreeding depression under androdioecy and dioecy, using populations derived from **A0**.
 
 * [Carvalho et al.](https://bmcevolbiol.biomedcentral.com/articles/10.1186/1471-2148-14-116) [-@Carvalho2014-ps]
 Evolution of population fitness and hermaphrodite fitness components in inbred populations derived from **A0** and adapted to the lab for 100 generations. 
