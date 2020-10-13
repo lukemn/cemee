@@ -2,9 +2,9 @@
 # Resources for the *C. elegans* multiparent experimental evolution panel
 ============================================================================  
        
-This site hosts genotype and phenotype data and associated metadata for the CeMEE RIL panel and evolved populations.
+This site hosts genotype and phenotype data and associated metadata for CeMEE recombinant inbred lines and the evolved outbred populations from which they were derived.
 
-[RIL metadata](https://lukemn.github.io/cemee/pages/rilMeta.html) tabulates sequencing status and statistics for all cryopreserved recombinant inbred lines.
+[RIL metadata](https://lukemn.github.io/cemee/pages/rilMeta.html) tabulates sequencing status and statistics for all cryopreserved RILs.
 
 Raw sequence data for all post-QC RILs is available from [NCBI SRA](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA557613/).
 
