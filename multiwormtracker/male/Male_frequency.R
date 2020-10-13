@@ -4,7 +4,7 @@
 #
 # Classify parsed Choreography tracks using an extreme gradient boosting model
 # trained on populations (including mono & dioecious) and inbred founders (extreme 40 of 70 samples, -CB4856).
-# The current model is saved in 08_xgb_preds.rda.
+# The current model is saved in xgb_preds.rda.
 # Track-level locomotion statistics are calculated (locostat), 
 # sex is predicted and annotated tracks are dumped to .rda (assignSexToTracks), 
 # then male/herm frequencies are sampled from small time slices (sampleHMs).
@@ -29,7 +29,7 @@ NC = detectCores()
 if(NC==1) FNP=NP=1
 while(FNP*NP > NC) FNP=FNP-1
 # classification model must be in WD if not in the usual place
-XGBmodel = '08_xgb_preds.rda'
+XGBmodel = 'xgb_preds.rda'
 if(file.exists(sprintf('/users/gev/noble/popSex/%s', XGBmodel))){
   load(sprintf('/users/gev/noble/popSex/%s', XGBmodel))
 } else {

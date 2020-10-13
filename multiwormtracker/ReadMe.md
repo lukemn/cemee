@@ -1,4 +1,5 @@
-Conversion from MWT blobs to [WCON](https://github.com/openworm/tracker-commons/blob/master/WCON_format.md).
+*wcon/* contains utilities for conversion from MWT blobs to Teotonio RData, and from either of these formats to [WCON](https://github.com/openworm/tracker-commons/blob/master/WCON_format.md).
 
+*male/* contains code to fit a pretrained extreme gradient-boosting model to parsed MWT data to classify tracks as male or hermaphrodite/female.
 
 
