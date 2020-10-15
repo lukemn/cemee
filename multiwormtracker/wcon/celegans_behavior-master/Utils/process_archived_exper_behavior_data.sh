@@ -24,7 +24,7 @@ fi
 output_folder_R_data="$1"
 
 # Path to the project folder and to the relevant scripts
-PRJ_FOLDER_PATH="/users/gev/noble/celegans_behavior-master"
+PRJ_FOLDER_PATH=`dirname $(dirname $0)`
 CHOREO_SCRIPT_FOLDER_PATH="${PRJ_FOLDER_PATH}/Utils/"
 R_PARSING_SCRIPT_PATH="${PRJ_FOLDER_PATH}/Parse_raw_exper_data/parse_raw_exper_data.R"
 
@@ -53,9 +53,9 @@ function processExperFolder {
 
     echo "Folder name = ${folder_name}"
 
-    if [[ -f "${folder_name}" || -d "${folder_name}" ]]; then
-        "Folder corresponding to file $i ($folder_name) already exists - SKIPPED"
-    else
+#    if [[ -f "${folder_name}" || -d "${folder_name}" ]]; then
+#        "Folder corresponding to file $i ($folder_name) already exists - SKIPPED"
+#    else
 
     # Extract the data
     tar xfj "$i"
@@ -69,7 +69,7 @@ function processExperFolder {
     fi
 
     # Invoke the choreography script
-    ${CHOREO_SCRIPT_FOLDER_PATH}/./run_choreography.sh "${folder_name}"
+    ${CHOREO_SCRIPT_FOLDER_PATH}/run_choreography.sh "${folder_name}"
     if [ $? -ne 0 ]; then
         showWarning "Failed to run choreography"
         return -1
@@ -137,7 +137,6 @@ function processExperFolder {
     if [ $? -ne 0 ]; then
         showWarning "Failed to touch the success file"
         return -1
-    fi
     fi
     return 0
 }

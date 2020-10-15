@@ -36,8 +36,9 @@ function showWarning {
 }
 
 # List all the folders
-readarray -t entry_list < <(exec ls)
+#readarray -t entry_list < <(exec ls)
 
+entry_list=($(ls))
 echo "Entries: ${entry_list[@]}"
 
 # arr=($(grep -o '[[:digit:]]\{8\}_[[:digit:]]\{6\}' ${exper_list[@]}))

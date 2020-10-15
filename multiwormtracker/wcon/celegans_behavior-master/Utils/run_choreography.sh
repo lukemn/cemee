@@ -19,7 +19,8 @@
 set -e
 
 # Path to the Choreography jar
-CHORE_JAR="/users/gev/mallard/Software/MWT/MWT_1.3.0_r1035/analysis/Chore.jar"
+DIR=`dirname $(dirname $0)`
+CHORE_JAR="$DIR/MWT_1.3.0_r1035/analysis/Chore.jar"
 
 if [ $# -ne 1 ]; then
     echo Usage: ./run_choreograph.sh INPUT_FOLDER_PATH
@@ -51,9 +52,17 @@ fi
 
 phenotype_str="id,persistence,area,speed,angular,length,width,aspect,midline,morphwidth,bias,pathlen,curve,loc_x,loc_y,orient,area:jitter,midline:jitter,morphwidth:jitter,loc_x:jitter,loc_y:jitter,kink"
 
+# plugins fail for Tom's data
 java -jar -Xmx6G -Xms6G "${CHORE_JAR}" \
-    -S --shadowless -q --plugin Reoutline --plugin Respine \
+    -S --shadowless \
     -o "${phenotype_str}" \
     -N all \
     "$input_dir_path"
+
+#java -jar -Xmx6G -Xms6G "${CHORE_JAR}" \
+#    -S --shadowless -q --plugin Reoutline --plugin Respine \
+#    -o "${phenotype_str}" \
+#    -N all \
+#    "$input_dir_path"
+
 echo ${phenotype_str} > "${input_dir_path}/phenotype_names.txt"

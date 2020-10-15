@@ -11,12 +11,18 @@ require(xgboost, quietly = T, warn.conflicts = F)
 require(parallel, quietly = T, warn.conflicts = F)
 require(data.table, quietly = T, warn.conflicts = F)
 
-args  = commandArgs(trailingOnly=T)
-WD    = args[1] # working directory containing parsed Choreography files (globbed as `Parsed*.RData`). 
+args   = commandArgs(trailingOnly=T)
+WD     = args[1] # working directory containing parsed Choreography files (globbed as `Parsed*.RData`). 
                 # Files for tracks passing QC will be saved in `WD/sex/`, with a new column `sex`.
-PREF  = args[2] # prefix for saving intermediate summary traits (`WD/sex/PREF_simpleTraits.RData`)
-FNP   = 8       # Thor default parallel threads across/within files
-NP    = 2
+XGBmod = args[2] # path to trained model
+PREF   = args[3] # prefix for saving intermediate summary traits (`WD/sex/PREF_simpleTraits.RData`)
+FNP    = 8       # Thor default parallel threads across/within files
+NP     = 2
+
+WD = '~/Documents/github/cemee/multiwormtracker/MWTdata/Parsed_behavior/testG0/'
+XGBmod='~/Documents/github/cemee/multiwormtracker/male/xgb_preds.rda'
+PREF="test"
+
 
 ## Sanity checks.
 # WD must exist and be writable
@@ -26,20 +32,14 @@ if(!file.exists(sprintf('%s/sex', WD))) stopifnot(system(sprintf('mkdir %s/sex',
 NC = detectCores()
 if(NC==1) FNP=NP=1
 while(FNP*NP > NC) FNP=FNP-1
-# classification model must be in WD if not running on Thor
-XGBmodel = 'xgb_preds.rda'
-if(file.exists(sprintf('/users/gev/noble/popSex/%s', XGBmodel))){
-  load(sprintf('/users/gev/noble/popSex/%s', XGBmodel))
+if(file.exists(XGBmod)){
+  load(XGBmod)
 } else {
-  if(file.exists(XGBmodel)){
-    load(sprintf('%s/%s', WD, XGBmodel))
-  } else {
-    cat(sprintf("Can't find classification model %s\nShould be in %s\n", XGBmodel, WD))
-    stop()
-  } 
+  cat(sprintf("Can't find classification model %s\n", XGBmod))
+  stop()
 }
 
-locostat <- function(D, minExpDuration=10, Lcensor=5, subsampleFrameRate=4, minTracks=30, minTrackDurationSec=3, minTrackObsPerState=3, agSamples = c(10, 15, 20), NP=1){
+locostat <- function(D, minExpDuration=4, Lcensor=3, subsampleFrameRate=4, minTracks=30, minTrackDurationSec=3, minTrackObsPerState=3, agSamples = c(10, 15, 20), NP=1){
   
   # Generate simple summary traits from MWT Choreography output.
   # Returns NULL if sample fails QC.
@@ -318,7 +318,7 @@ main <- function(){
   merged <- do.call(rbind, lapply(seq_along(ids), function(x) cbind(xid = ids[x], out[[x]][[1]], out[[x]][3:6])))
   
   # predict sex for each track and dump per sample .RData in WD/sex
-  cat(sprintf('... predicting sex from %s model\n', XGBmodel))
+  cat(sprintf('... predicting sex from %s model\n', XGBmod))
   assignSexToTracks(merged, pfiles)
   
   # sample male/herm frequencies from the classified tracks and dump single .rda in WD/sex

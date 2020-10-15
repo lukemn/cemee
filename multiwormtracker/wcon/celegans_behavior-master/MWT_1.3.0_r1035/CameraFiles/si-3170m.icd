@@ -1,0 +1,195 @@
+CameraFile (4.45) {
+   Type (Digital)
+   Manufacturer (Silicon Imaging)
+   Model (3170)
+   CreationDate (20020531142509)
+
+   InterfaceInfo (1428) {
+      AcquisitionWindow (6, 3, 2048, 1539)
+      BinaryThreshold (128, 4095)
+      BitDepth (12)
+      FrameTimeout (5000)
+      LUT (Normal)
+      LUTTransform (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+      MaxImageSize (2056, 1542)
+      Scaling (0)
+      ScanType (Area)
+      DataFPGAControl (1)
+      DetectPCLK (Yes)
+      Enables {
+         Mode (0x2)
+         HEnable (0x0)
+         VEnable (0x0)
+      }
+
+      HSyncBlanking (No)
+      Interlaced (No)
+      OnBoardClock (20)
+      Serial {
+         Baud (9600)
+         Databits (8)
+         DTR (High)
+         Parity (N)
+         RTS (High)
+         SerialDisabled (No)
+         Stopbits (2)
+         TermChars (\r\n)
+      }
+
+      SignalLevels {
+         DataLines (RS422)
+         EnableA (RS422, High)
+         EnableB (RS422, High)
+         EnableC (RS422, High)
+         EnableD (RS422, High)
+         MasterClock (TTL)
+         PGOutput (RS422)
+         PixelClock (RS422, High)
+         Trigger0 (TTL)
+         Trigger1 (TTL)
+         Trigger2 (TTL)
+         Trigger3 (TTL)
+      }
+
+      SwapColumns (Yes)
+      Tap (0) {
+         Position (Adjacent)
+         Start (Left, Top)
+      }
+
+      Tap (1) {
+         Position (Adjacent)
+         Start (Left, Top)
+      }
+   }
+
+
+   Pattern {
+      Action (PG) {
+         Line (0) {
+            Start (High)
+         }
+
+         Line (1) {
+            Start (High)
+         }
+
+         Line (2) {
+            Start (High)
+         }
+
+         Line (3) {
+            Start (High)
+         }
+
+         Line (4) {
+            Start (High)
+         }
+
+         Line (5) {
+            Start (High)
+         }
+
+         Line (6) {
+            Start (High)
+         }
+
+         Line (7) {
+            Start (High)
+         }
+
+         Timebase (1)
+      }
+   }
+
+
+   Attribute (Control Mode) {
+      Value (List) {
+         Name (Load Presets) {
+            Attribute (Presets) {
+               Value (List) {
+                  Name (Preset1) {
+                     Action (Serial) {
+                        Command (1\r)
+                        Response (601: Loaded preset #1\r\n)
+                     }
+
+                     Action (Interface, Digital) {
+                        MaxImageSize (2056, 1542)
+                     }
+                  }
+
+                  Name (Preset2) {
+                     Action (Serial) {
+                        Command (2\r)
+                        Response (602: Loaded preset #2\r\n)
+                     }
+
+                     Action (Interface, Digital) {
+                        MaxImageSize (2056, 789)
+                     }
+                  }
+
+                  Name (Preset3) {
+                     Action (Serial) {
+                        Command (3\r)
+                        Response (603: Loaded preset #3\r\n)
+                     }
+
+                     Action (Interface, Digital) {
+                        MaxImageSize (2056, 789)
+                     }
+                  }
+
+                  Name (None) {
+                  }
+
+                  Default (Preset1)
+                  Current (None)
+               }
+            }
+         }
+
+         Default (Load Presets)
+         Current (Load Presets)
+      }
+   }
+
+
+   Attribute (Global Gain Setting) {
+      Value (List) {
+         Name (1.0X) {
+            Action (Serial) {
+               Command (lyda0100\r)
+               Response (104: Sensor updated\r\n)
+            }
+         }
+
+         Name (2.0X) {
+            Action (Serial) {
+               Command (lyda0101\r)
+               Response (104: Sensor updated\r\n)
+            }
+         }
+
+         Name (4.0X) {
+            Action (Serial) {
+               Command (lyda0102\r)
+               Response (104: Sensor updated\r\n)
+            }
+         }
+
+         Name (8.0X) {
+            Action (Serial) {
+               Command (lyda0103\r)
+               Response (104: Sensor updated\r\n)
+            }
+         }
+
+         Default (2.0X)
+         Current (4.0X)
+      }
+   }
+
+
+}
