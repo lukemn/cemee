@@ -39,7 +39,7 @@ if(file.exists(XGBmod)){
   stop()
 }
 
-locostat <- function(D, minExpDuration=2, Lcensor=2, subsampleFrameRate=4, minTracks=30, minTrackDurationSec=3, minTrackObsPerState=3, agSamples = c(10, 15, 20), NP=1){
+locostat <- function(D, minExpDuration=2, Lcensor=1, subsampleFrameRate=4, minTracks=30, minTrackDurationSec=3, minTrackObsPerState=3, agSamples = c(10, 15, 20), NP=1){
   
   # Generate simple summary traits from MWT Choreography output.
   # Returns NULL if sample fails QC.
