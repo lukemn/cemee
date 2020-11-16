@@ -14,15 +14,14 @@ require(data.table, quietly = T, warn.conflicts = F)
 args   = commandArgs(trailingOnly=T)
 WD     = args[1] # working directory containing parsed Choreography files (globbed as `Parsed*.RData`). 
                 # Files for tracks passing QC will be saved in `WD/sex/`, with a new column `sex`.
-XGBmod = args[2] # path to trained model
+XGBmod = args[2] # path to trained model (~/path/xgb_mod, also loads ~/path/xgb_mod.feature_names)
 PREF   = args[3] # prefix for saving intermediate summary traits (`WD/sex/PREF_simpleTraits.RData`)
 FNP    = 8       # Thor default parallel threads across/within files
 NP     = 2
 
-WD = '~/Documents/github/cemee/multiwormtracker/MWTdata/Parsed_behavior/testG0/'
-XGBmod='~/Documents/github/cemee/multiwormtracker/male/xgb_preds.rda'
-PREF="test"
-
+# WD = '~/Documents/github/lab/nongenetic/JUb/MWTdata/Parsed_behavior/test/'
+# XGBmod='~/Documents/github/cemee/multiwormtracker/male/xgb_preds.rda'
+# PREF="test"
 
 ## Sanity checks.
 # WD must exist and be writable
@@ -33,13 +32,14 @@ NC = detectCores()
 if(NC==1) FNP=NP=1
 while(FNP*NP > NC) FNP=FNP-1
 if(file.exists(XGBmod)){
-  load(XGBmod)
+  load(sprintf("%s.feature_names", XGBmod))
+  xmod = xgb.load(XGBmod)
 } else {
   cat(sprintf("Can't find classification model %s\n", XGBmod))
   stop()
 }
 
-locostat <- function(D, minExpDuration=4, Lcensor=3, subsampleFrameRate=4, minTracks=30, minTrackDurationSec=3, minTrackObsPerState=3, agSamples = c(10, 15, 20), NP=1){
+locostat <- function(D, minExpDuration=2, Lcensor=2, subsampleFrameRate=4, minTracks=30, minTrackDurationSec=3, minTrackObsPerState=3, agSamples = c(10, 15, 20), NP=1){
   
   # Generate simple summary traits from MWT Choreography output.
   # Returns NULL if sample fails QC.
@@ -195,15 +195,15 @@ assignSexToTracks <- function(dfo, parsed_files){
   # this is the matrix of track-level simple traits for all samples
   Xd = dfo[,2:39]
   cat('... model feature names:\n')
-  print(xmod$feature_names)
+  print(feature_names)
   cat('Log transforming to match training data\n')
-  features = gsub('ln.', '', fixed=T, xmod$feature_names)
+  features = gsub('ln.', '', fixed=T, feature_names)
   features = c(features, paste0('ln.', features))
   features = features[features %in% names(Xd)]
   Xd = Xd[,features]
-  stopifnot(length(xmod$feature_names) == ncol(Xd))
-  for(i in names(Xd)) if(!i %in% xmod$feature_names) {Xd[,i] = log(Xd[,i]); names(Xd)[names(Xd)==i] <- paste0('ln.', i)}
-  Xd = as.matrix(Xd[,xmod$feature_names])
+  stopifnot(length(feature_names) == ncol(Xd))
+  for(i in names(Xd)) if(!i %in% feature_names) {Xd[,i] = log(Xd[,i]); names(Xd)[names(Xd)==i] <- paste0('ln.', i)}
+  Xd = as.matrix(Xd[,feature_names])
   dfo$sex = predict(xmod, Xd)
   # binarize probabilities. Uncertain tracks are included, but not many typically.
   dfo$sex = factor(dfo$sex>0.5, labels = c('male', 'herm'))
@@ -234,7 +234,7 @@ assignSexToTracks <- function(dfo, parsed_files){
   } 
 }
 
-sampleHMs <- function(classifiedTrackFiles, sampleStartMin=5, sampleEndMin=20, sampleFreqPerMin=2, sampleWindowS=1, offset=0, subsampleFrameRate=4, minTrackLengthS=10, NP=12){
+sampleHMs <- function(classifiedTrackFiles, sampleStartMin=1, sampleEndMin=20, sampleFreqPerMin=2, sampleWindowS=1, offset=0, subsampleFrameRate=4, minTrackLengthS=10, NP=12){
   
   # Sample herm/male frequencies from sex-assigned tracks to account for track frequency/sex confounding.
   #
@@ -245,7 +245,7 @@ sampleHMs <- function(classifiedTrackFiles, sampleStartMin=5, sampleEndMin=20, s
   # output is a data.frame of frequencies per time slice and experimental file (defined by date/time of acquisition), 
   # ready for estimation by glm across replicates, or whatever.
   
-  # sampleStartMin=5; sampleEndMin=20; sampleFreqPerMin=2; sampleWindowS=1; offset=0; subsampleFrameRate=4; minTrackLengthS=10
+  # sampleStartMin=1; sampleEndMin=20; sampleFreqPerMin=2; sampleWindowS=1; offset=0; subsampleFrameRate=4; minTrackLengthS=10
   
   # filter and subsample tracks
   o = sprintf('%s/sex/%s_mergedClassifiedTracks.rda', WD, PREF)
@@ -277,17 +277,20 @@ sampleHMs <- function(classifiedTrackFiles, sampleStartMin=5, sampleEndMin=20, s
   
   # sample male/herm freqs for each MWT file. NB this eats RAM
   w = seq(sampleStartMin, sampleEndMin, 1/sampleFreqPerMin)*60
+  w = w[w<max(tracks$Time)]
   sampledFreqs <- do.call(rbind, mclapply(split(tracks, paste(tracks$date, tracks$xtime)), mc.cores = 1, function(x) {
     mfreqs = do.call(rbind, lapply(w, function(i) table(subset(x, round((Time+offset)/sampleWindowS)==round(i/sampleWindowS))$sex)))
     cbind(x[1,c('id', 'xtime', 'date')], m=mfreqs[,1], h=mfreqs[,2], w=w[1:nrow(mfreqs)], row.names=NULL)
   }))
   
   # predict here, but you may want to redo
-  m = glm(cbind(m, h)~id, subset(sampledFreqs, w>300 & w<1200), family='binomial')
+  # only works for > 1 sample, of course
+  # m = glm(cbind(m, h)~id, subset(sampledFreqs, w>300 & w<1200), family='binomial')
+  m = glm(cbind(m, h)~id, subset(sampledFreqs, w>60), family='binomial')
   nd = data.frame(id=unique(sampledFreqs[,c('id')]))
   nd$f_male = predict(m, newdata = nd, type='response')
-  nd$n_male = aggregate(data = subset(sampledFreqs, w>300 & w<1200), m~id, median)$m
-  nd$n_herm = aggregate(data = subset(sampledFreqs, w>300 & w<1200), h~id, median)$h
+  nd$n_male = aggregate(data = subset(sampledFreqs, w>60), m~id, median)$m
+  nd$n_herm = aggregate(data = subset(sampledFreqs, w>60), h~id, median)$h
   print(nd)
   save(sampledFreqs, nd, file = sprintf('%s/sex/%s_sampledFreqs_w%s.rda', WD, PREF, sampleWindowS))
 }
