@@ -4,5 +4,7 @@
 
 Dependencies:
 greadlink (brew install coreutils )
-R:optparse
+R:optparse, xgboost, data.table
+JDK
+
 
