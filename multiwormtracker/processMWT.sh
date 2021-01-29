@@ -19,7 +19,9 @@ CONV=`pwd`/wcon/blobs2wcon.R
 PREDICT_MALES=true
 # save Processed_behaviour Parsed_behaviour on Gdrive
 MALE=`pwd`/male/splitTracksBySex.R
-XGB=`pwd`/male/xgb_preds.rda
+# now pass full path as arg for condition dependent models
+#XGB=`pwd`/male/xgb_preds.rda
+XGB=$2
 # backup to google drive via rclone, saving Processed_behaviour, Parsed_behaviour under each experiment dir
 BACKUP_GOOGLE=false
 GDRIVE=remote:/MWT
