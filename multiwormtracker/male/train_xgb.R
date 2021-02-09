@@ -63,6 +63,8 @@ cv <- xgb.cv(data = Xd, params = param, nfold=3, nrounds=120)
 xmod = xgboost(params = param, data = Xd, nrounds = 100, early_stopping_rounds = 10)
 (fimp = xgb.importance(feature_names = traits, model=xmod))
 
+save(traits, file = '/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_ngm_xgb_preds.feature_names')
+save(traits, file = '/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_nacl_xgb_preds.feature_names')
 xgb.save(xmod, fname = '/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_ngm_xgb_preds')
 xgb.save(xmod, fname = '/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_nacl_xgb_preds')
 
@@ -81,10 +83,10 @@ merged$env = factor(reps>8, labels=c('N', 'S'))
 merged$rep = reps
 
 ntracks = subset(merged, env=="N")
-xgb.load('/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_ngm_xgb_preds')
+xmod = xgb.load('/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_ngm_xgb_preds')
 
 ntracks = subset(merged, env=="S")
-xgb.load('/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_nacl_xgb_preds')
+xmod = xgb.load('/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_nacl_xgb_preds')
 
 for(i in c('area.F', 'width.F')){
   ntracks[,i] = log(ntracks[,i])

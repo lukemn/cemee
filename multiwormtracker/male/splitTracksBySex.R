@@ -14,7 +14,7 @@ require(data.table, quietly = T, warn.conflicts = F)
 args   = commandArgs(trailingOnly=T)
 WD     = args[1] # working directory containing parsed Choreography files (globbed as `Parsed*.RData`). 
                 # Files for tracks passing QC will be saved in `WD/sex/`, with a new column `sex`.
-XGBmod = args[2] # path to trained model (~/path/xgb_mod, also loads ~/path/xgb_mod.feature_names)
+XGBmod = args[2] # full path to trained model, NB can't use ~ expandion. (/path/xgb_mod, also loads ~/path/xgb_mod.feature_names)
 PREF   = args[3] # prefix for saving intermediate summary traits (`WD/sex/PREF_simpleTraits.RData`)
 FNP    = 8       # Thor default parallel threads across/within files
 NP     = 2
@@ -280,7 +280,7 @@ sampleHMs <- function(classifiedTrackFiles, sampleStartMin=1, sampleEndMin=20, s
   w = w[w<max(tracks$Time)]
   sampledFreqs <- do.call(rbind, mclapply(split(tracks, paste(tracks$date, tracks$xtime)), mc.cores = 1, function(x) {
     mfreqs = do.call(rbind, lapply(w, function(i) table(subset(x, round((Time+offset)/sampleWindowS)==round(i/sampleWindowS))$sex)))
-    cbind(x[1,c('id', 'xtime', 'date')], m=mfreqs[,1], h=mfreqs[,2], w=w[1:nrow(mfreqs)], row.names=NULL)
+    cbind(x[1,c('id', 'xtime', 'date')], h=mfreqs[,1], m=mfreqs[,2], w=w[1:nrow(mfreqs)], row.names=NULL)
   }))
   
   # predict here, but you may want to redo
