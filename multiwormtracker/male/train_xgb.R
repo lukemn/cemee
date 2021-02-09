@@ -63,8 +63,9 @@ cv <- xgb.cv(data = Xd, params = param, nfold=3, nrounds=120)
 xmod = xgboost(params = param, data = Xd, nrounds = 100, early_stopping_rounds = 10)
 (fimp = xgb.importance(feature_names = traits, model=xmod))
 
-save(traits, file = '/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_ngm_xgb_preds.feature_names')
-save(traits, file = '/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_nacl_xgb_preds.feature_names')
+feature_names = traits
+save(feature_names, file = '/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_ngm_xgb_preds.feature_names')
+save(feature_names, file = '/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_nacl_xgb_preds.feature_names')
 xgb.save(xmod, fname = '/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_ngm_xgb_preds')
 xgb.save(xmod, fname = '/Users/noble/Documents/github/cemee/multiwormtracker/male/tp_nacl_xgb_preds')
 

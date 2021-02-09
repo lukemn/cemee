@@ -10,6 +10,7 @@
 require(xgboost, quietly = T, warn.conflicts = F)
 require(parallel, quietly = T, warn.conflicts = F)
 require(data.table, quietly = T, warn.conflicts = F)
+if(!Sys.getlocale("LC_NUMERIC")=='C') Sys.setlocale("LC_NUMERIC", "C")
 
 args   = commandArgs(trailingOnly=T)
 WD     = args[1] # working directory containing parsed Choreography files (globbed as `Parsed*.RData`). 
