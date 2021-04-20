@@ -49,7 +49,12 @@ metal <- list(
     style='petri',
     size=90
   ),
-  stage='adult'
+  stage='adult',
+  food='HT115',
+  software=list(tracker = list(name='MWT', version='1.3.0_r1035'),
+                settings='-S --shadowless -q --plugin Reoutline --plugin Respine -N all',
+                featureID='@MWT'
+  )
 )
 
 # common units list for metadata and data
@@ -63,13 +68,7 @@ unitl = lapply(
        speed='mm/s',
        curve='r',
        angular='r/s',
-       bias='',
-       food='HT115',
-       software=list(name='MWT', 
-                     version='1.3.0_r1035',
-                     settings='-S --shadowless -q --plugin Reoutline --plugin Respine -N all',
-                     featureID='@MWT'
-       )
+       bias=''
   ), 
   function(i) unb(i)
 )

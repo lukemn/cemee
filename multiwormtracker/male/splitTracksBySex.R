@@ -14,7 +14,7 @@ if(!Sys.getlocale("LC_NUMERIC")=='C') Sys.setlocale("LC_NUMERIC", "C")
 
 args   = commandArgs(trailingOnly=T)
 WD     = args[1] # working directory containing parsed Choreography files (globbed as `Parsed*.RData`). 
-                # Files for tracks passing QC will be saved in `WD/sex/`, with a new column `sex`.
+                 # Files for tracks passing QC will be saved in `WD/sex/`, with a new column `sex`.
 XGBmod = args[2] # full path to trained model, NB can't use ~ expandion. (/path/xgb_mod, also loads ~/path/xgb_mod.feature_names)
 PREF   = args[3] # prefix for saving intermediate summary traits (`WD/sex/PREF_simpleTraits.RData`)
 FNP    = 8       # Thor default parallel threads across/within files
@@ -318,6 +318,7 @@ main <- function(){
   print(sprintf('%s (of %s) failed QC, %s errors', sum(nulls), length(nulls), sum(errs)))
   out <- out[!(nulls|errs)]
   pfiles <- pfiles[!(nulls|errs)]
+  stopifnot(length(out)>0)
   ids = unlist(lapply(strsplit(basename(pfiles), '-'), function(x) paste(x[2:3], collapse='-')))
   merged <- do.call(rbind, lapply(seq_along(ids), function(x) cbind(xid = ids[x], out[[x]][[1]], out[[x]][3:6])))
   

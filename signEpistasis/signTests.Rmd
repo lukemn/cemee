@@ -1,0 +1,318 @@
+---
+title: "Testing the evolutionary consequences of sign epistasis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(parallel)
+require(ggplot2)
+require(ggh4x)
+require(lme4)
+require(nlme)
+require(knitr)
+require(reshape2)
+setwd('~/Documents/github/cemee/signEpistasis/')
+```
+
+
+We detected several cases of strong sign epistasis for fertility in CeMEE RILs (Noble et al., 2017).
+
+The evolution of populations in which these kinds of interactions are segregating should (all other things being equal) be sensitive to the frequency of the interacting alleles. We can test this with experimental evolution using selected RILs, and here we will simulate these experiments to get some idea of expected outcomes and the power to detect them. 
+
+For now, we're ignoring the issue of whether these interactions are representative in outbred populations (where dominance is potentially important). 
+
+In brief, individual-based simulations below will generate replicate experimental populations that varying in frequency of a single focal interaction between alleles on two chromosomes (by mixing a single recombinant inbred line and the N2 reference). Outcrossing is assumed (without recombination -  evolution is through segregation variances and selection). 
+
+We will model a polygenic trait with a specified genetic architecture and heritability (due to additive and pairwise interaction effects), using the effects estimated for the QTL. For simplicity,
+all epistatic heritability is due to the focal interaction, all additive heritability is due to sampled markers assigned in equal number to each chromosome. Below, we're only considering a single interaction, between chromosomes III and IV.   
+
+Generations are discrete, we apply truncation selection based on fitness of a given intensity.  
+
+
+###Setup
+First we load the required data:  
+- Xld: LD pruned reference-based genotypes (we filter to SNVs segregating in A6140) 
+- hfpass: locations of the interacting alleles  
+- allp: fertility phenotype data, with genotypes for the major effect interactions (e.g., a1/b1 are the two interacting alleles at QTL 1)  
+- pix: the names of these interacting pairs  
+- peff: predicted additive and interaction effects for these alleles from linear regression
+
+```{r load geno/pheno data}
+load('simulationData.rda', verbose = T)
+source('sign_fns.R')
+
+pos = Xld[[1]]
+cmarkers = table(pos$chrom)
+geno = data.frame(Xld[[2]])
+lines = unique(ecoefs$line[ecoefs$pop=='A6140'])
+geno = geno[,names(geno) %in% lines]
+afs = apply(geno, 1, sum)/length(lines)*100
+# filter genotypes, MAF > 3%
+geno = geno[afs>3 & afs<97,]
+```
+
+Experimental and simulation parameters.  
+
+The ratio between census size (Ncensus; population size at the end of a generation) and the number of worms transferred to the next generation (NindPerRep; sampled in proportion to their predicted fitness) controls the intensity of selection.   
+
+```{r parameters}
+altFreq = c(0.25, 0.5, 0.75) # treatment: starting frequency of N2 alleles (varying F1 backcrosses)
+Nreps=30           # experimental replicates (plates) per treatment
+Ncensus=200        # plate census size
+NindPerRep=100     # number of individuals sampled from Ncensus (based on relative fitness) each generation
+NgenPerRep=10      # length of the experiment in generations
+Nchrom=6           # number of chromosomes to model ()
+NlociPerChrom=5    # number of additive background QTL per chromosome
+Ncaus = NlociPerChrom*Nchrom
+additiveH2 = 0.3   # genomic h2
+epistaticH2 = 0.15 # heritability of segregating interactions on III/IV
+```
+
+Below we randomly sample some markers to generate the additive genetic background, make a phenotype based on the supplied additive and epistatic heritability values, and estimate the allelic effects for later use.  
+
+```{r phenotypes}
+# sample additive markers and generate phenotype with ~full heritability
+x1 = simPheno(c(0.99, 0), Ncausal = Ncaus, X = geno, returnCausalIx = T)
+# the positions of the sampled markers
+cix = x1[[1]]
+# phenotype values
+phe = x1[[2]]
+phe$line = rownames(phe)
+phe = merge(phe, allp, sort=F)
+# rescale to specified additive + epistatic heritability
+phe$yy = phe$y * sqrt(additiveH2/var(phe$y))
+# using the simulated additive phenotypes generated above, 
+# and the phenotypes predicted solely from the known epistatic interactions
+phe$yy = phe$yy + phe$pred * sqrt(epistaticH2/var(phe$pred))
+Ve = rnorm(nrow(phe))
+Ve = Ve*sqrt((1-(additiveH2+epistaticH2))/var(Ve))
+phe$yy = scale(phe$yy + Ve)
+# estimate effects, heritability
+# these models are used later to predict phenotypes
+addfit = lm(sprintf('yy~%s', paste(paste0('x', 1:Ncaus), collapse='+')), phe)
+intfit = lm(yy~a1*b1 + a2*b2 + a3*b2 + a4*b4 + a3*b5, phe)
+cat(sprintf('Simulated additive/epistatic heritability = %.2f/%.2f\n', additiveH2, epistaticH2))
+cat(sprintf('Realised heritability = %.2f/%.2f\n', summary(addfit)$adj, summary(intfit)$adj))
+# get all allelic effects
+ffit = lm(sprintf('yy~%s + a1*b1 + a2*b2 + a3*b2 + a4*b4 + a3*b5', paste(paste0('x', 1:Ncaus), collapse='+')), phe)
+(acoefs = data.frame(beta=coef(summary(ffit))[,1]))
+acoefs$variable = rownames(acoefs)
+```
+
+Below we select the RIL that we're going to use as a source of non-reference alleles, and generate  parental genotypes (haploid, but treated as homozygous diploid) in a format convenient for simulation.  
+
+```{r initialise}
+# selected RIL parent
+P1 = "A6140L22"  # fixed for alternate alleles at a2/b2, a4/b4
+focalpair = c('a4', 'b4')
+addix = paste0('x', 1:Ncaus)
+# additive markers per chromosome
+(markers = split(addix, rep(1:Nchrom, each=NlociPerChrom)))
+intchr = c(T, T, F, T, F, T, F, T, F, T) # assigning interacting marker pairs to chromosome
+imarkers = split(pix, intchr)
+# RIL parent genotype
+P1x = subset(phe, line==P1)[,c(addix, pix)]
+# N2 parent
+P2x = Ox = P1x; P2x[]=0
+# split by chromosome/additive/interacting
+P1chr = split(as.numeric(P1x[addix]), rep(1:Nchrom, each=NlociPerChrom))
+P1int = split(as.numeric(P1x[pix]), intchr) # chr3, 4
+P2chr = split(as.numeric(P2x[addix]), rep(1:Nchrom, each=NlociPerChrom))
+P2int = split(rep(0, len(pix)), intchr) # chr3, 4
+```
+
+###Simulation
+Below is the main routine. 
+
+```{r simulate}
+
+# parallel threads
+np=6
+repev = dplyr::bind_rows(lapply(altFreq, function(q){
+  print(q)
+  o = dplyr::bind_rows(mclapply(1:Nreps, mc.cores=np, function(i){
+    
+    runRep <- function(){
+      
+      # expand G1 to NindPerRep, sampling chromosomes at a given reference allele frequency
+      G1 <- function(P1chr, P2chr, N2freq = 0.5){
+        
+        F2s = dplyr::bind_rows(lapply(1:NindPerRep, function(x) {
+          # segregation of chromosomes, no recombination, ignore hets
+          toss = sample(c(0,1), Nchrom, prob = c(1-N2freq, N2freq), replace=T)==0
+          Ox[addix] = unlist(lapply(1:Nchrom, function(i) if(toss[i]) P1chr[[i]] else P2chr[[i]]))
+          toss = toss[3:4]
+          for(i in 1:2) Ox[imarkers[[i]]] = if(toss[i]) P1int[[i]] else P2int[[i]]
+          Ox
+        }))
+        F2s
+      }
+      
+      # then, in subsequent generations, expand to Ncensus, 
+      # and sample NindPerRep in proportion to predicted fitness (+ residual noise)
+      Gn <- function(popdf){
+        
+        addl = lapply(split(popdf, 1:nrow(popdf)), function(x) split(as.numeric(x[addix]), rep(1:Nchrom, each=NlociPerChrom)))
+        intl = lapply(split(popdf, 1:nrow(popdf)), function(x) split(as.numeric(x[pix]), intchr))
+        
+        Fns = dplyr::bind_rows(lapply(1:Ncensus, function(x) {
+          k = sample(1:len(addl), 2)
+          toss = sample(c(0,1), Nchrom, replace=T)==0
+          Ox[addix] = unlist(lapply(1:Nchrom, function(i) if(toss[i]) addl[[k[1]]][[i]] else addl[[k[2]]][[i]]))
+          toss = toss[c(3,4)]
+          for(i in 1:2) Ox[imarkers[[i]]] = if(toss[i]) intl[[k[1]]][[i]] else intl[[k[2]]][[i]]
+          Ox
+        }))
+        
+        # heritability is assumed constant, which is silly
+        Fns$add = predict(addfit, newdata = Fns)
+        Fns$int = predict(intfit, newdata = Fns)
+        Fns$y = Fns$add * sqrt(additiveH2/var(Fns$add))
+        Fns$y = Fns$y + Fns$int * sqrt(epistaticH2/var(Fns$int))
+        ee = rnorm(Ncensus); ee = ee*sqrt((1-(additiveH2+epistaticH2))/var(ee))
+        Fns$y = Fns$y + ee
+        Fns = Fns[!is.infinite(Fns$y),]
+        
+        # cut on predicted BV
+        Fns[sample(Ncensus, NindPerRep, prob = Fns$y-min(Fns$y)),]
+      }
+      
+      # iterate over generations, 
+      # recording fitness (w), phenotypic variance (sigma), 
+      # variance in additive breeding values (sigmaA), 
+      # and variance in epistatic effects (sigmaE),
+      GX = G1(P1chr, P2chr, N2freq = q)
+      afs = ws = sigma = sigmaA = sigmaE = focalg = NULL
+      for(j in 1:NgenPerRep){
+        cat('.')
+        GX = Gn(GX)
+        afs = rbind(afs, apply(GX[,c(addix, pix)], 2, sum)/nrow(GX))
+        ws = c(ws, mean(GX$y))
+        sigma = c(sigma, var(GX$y))
+        sigmaA = c(sigmaA, var(GX$add))
+        sigmaE = c(sigmaE, var(GX$int))
+        focs = apply(GX[,focalpair], 1, paste0, collapse='')
+        focalg = rbind(focalg, data.frame('00' = sum(focs=='00')/NindPerRep,
+                                          '01' = sum(focs=='01')/NindPerRep,
+                                          '10' = sum(focs=='10')/NindPerRep,
+                                          '11' = sum(focs=='11')/NindPerRep))
+      }
+      cat(' ')
+      cbind(rep=i, w=ws, sigma, sigmaA, sigmaE, G=1:NgenPerRep, reff = q, data.frame(afs), focalg)
+      
+    }
+    
+    oi=NULL
+    while(is.null(oi)) oi = tryCatch(runRep(), error = function(e){NULL})
+    oi
+    
+  }))
+  cat('\n')
+  o
+}))
+
+# predicted phenotypes from the full model
+repev$pred = predict(ffit, newdata = repev)
+
+# remove any fixed genotypes
+nix = apply(repev, 2, sum)==0
+evs = repev[,!nix]
+evs$rep = factor(evs$rep)
+evs$reff = factor(evs$reff)
+head(evs)
+```
+
+The result is a data.frame with, for each experimental plate (1 generation of a given replicate lineage initiated at a given allele frequency of the focal interacting alleles):  
+- *w*, predicted log fitness (fertility, in the same units as the input data - Poisson linear model coefficients)  
+- *sigma*, phenotypic variance  
+- *sigmaA*, variance in phenotype predicted from background additive effects  
+- *sigmaE*, variance in phenotype predicted from focal loci (additive and interaction effects)  
+- *rep* & *G*, replicate and generation number  
+- *reff*, starting reference allele frequency  
+- *x1-```r Ncaus```*, allele frequencies at all (segregating) background additive markers  
+- *a1-n* & *b1-n*, allele frequencies at all (segregating) interacting markers  
+- *X00/X01/X10/X11*, frequencies of the four homozygous genotype classes at the focal interaction  
+- *pred*, predicted phenotype from the plate-level allele frequencies (ignoring interactions)  
+ 
+###Results
+Now to plot some results. First, the mean frequencies of the focal alleles across all technical replicates for a given starting frequency - what we would see if we ignored interactions and simply measured the frequencies of causal alleles in each experimental plate. 
+
+Depending on sampling details, there can be a clear divergence in the slopes for a given allele as function of starting frequency - reflecting the effects of the interaction - but usually it's a weak signal, at best. 
+
+We need to genotype individuals at the focal interaction(s) to get a more accurate and powerful picture of what's going on. Even then, there's a lot of variation among runs - without recombination, linked variation  (```r Ncaus`` causal variants with randomly assigned effects) can work with or against the focal interaction effects.  
+
+```{r mean frequencies of focal alleles, echo=0}
+afm = merge(reshape2::melt(evs, 1:7), acoefs)
+afm$xlab = 'Starting frequency (N2)'
+afm$ylab = 'Focal interactions'
+ggplot(subset(afm, variable %in% focalpair), aes(G, value)) + 
+  geom_line(aes(group = rep), alpha=0.2) + 
+  facet_nested(rows = vars(xlab, reff), cols = vars(ylab, variable), scales='free') + 
+  stat_summary(fun.data = mean_se) + geom_smooth() + 
+  scale_x_continuous(breaks=c(0,5,10)) + 
+  labs(y = 'Allele frequency', x = 'Generation') + theme_classic()
+```
+
+We can look at the individual allele frequency trajectories among replicates.  
+
+```{r across individual replicates, echo=0, fig.width=10}
+afm$ylab = 'Technical replicate'
+ggplot(subset(afm, variable %in% focalpair), aes(G, value)) + 
+  geom_line(aes(col = variable)) + 
+  facet_nested(rows = vars(xlab, reff), cols = vars(ylab, rep), scales='free') + 
+  scale_x_continuous(breaks=c(0,5,10)) + theme(legend.position = 'top') + 
+  labs(y = 'Allele frequency', x = 'Generation') + 
+  scale_color_discrete('Interacting allele') + 
+  theme_classic() + theme(legend.position = 'top', axis.text.x = element_blank(), strip.background = element_blank())
+```
+
+And summarise by averaging over technical replicates.  
+
+Below, we plot the mean change in frequency of the four genotype classes at the focal interaction, and test for differences in the slopes of these lines as a function of starting allele frequency.  
+
+This is an explicit test of our simple hypothesis, that selection on individual alleles that strongly interact through sign epistasis should depend on the starting allele frequency. 
+
+```{r selection on interacting alleles}
+# starting frequency-dependent trajectories of genotype classes at the focal interaction
+afoc = reshape2::melt(evs[,c(1:7, which(names(evs) %in% c('X00', 'X01', 'X10', 'X11')))], 1:7, variable.name='genotype')
+afoc$xlab = 'Starting frequency (N2)'
+
+ggplot(afoc, aes(G, value, col = genotype)) + 
+  facet_nested(rows = vars(xlab, reff), scales='free') +
+  stat_summary(fun.data = mean_se) + geom_smooth(method='lm') + 
+  theme_classic() + labs(x='Generation', y='Allele frequency')
+
+# fit a model (with temporal autocorrelation)
+# testing dependence of genotype frequency on starting frequency
+# (the genotype:G:ref interaction is the main term of interest)
+cs1 = corAR1(0.7, form=~G|rep/reff/genotype)
+# cs1. = Initialize(cs1, data = afoc)
+# plot(corMatrix(cs1.)[[1]][1,])
+
+# full mixed-effects model, random genotype slope within replicate
+fiti = lme(asin(value)~genotype*G*reff, random=~genotype|rep, afoc, control=lmeControl(opt='optim'))
+fit = update(fiti, correlation=cs1)
+anova(fit)
+```
+
+*Predicted* evolutionary consequences (assuming no physiological limits, trade-offs). Obviously false, but potentially predictive of short-term evolution.  
+
+``` {r predicted fitness varies with starting frequency, echo=0}
+ggplot(afm, aes(G, w, col = reff)) + stat_summary(fun.data = mean_se) + 
+  geom_smooth() + theme_classic() + 
+  ggtitle('mean population fitness (including interactions)') + 
+  scale_color_discrete('Starting frequency (N2)') + labs(x = 'Generation')
+
+ggplot(evs, aes(G, pred, col = reff)) + stat_summary(fun.data = mean_se) + 
+  geom_smooth() + theme_classic() + 
+  ggtitle('mean population fitness (excluding interactions)') + 
+  scale_color_discrete('Starting frequency (N2)') + labs(x = 'Generation')
+
+ggplot(evs, aes(G, sigma, col = reff)) + stat_summary(fun.data = mean_se) + 
+  geom_smooth() + theme_classic() + 
+  ggtitle('variance in population fitness') + 
+  scale_color_discrete('Starting frequency (N2)') + labs(x = 'Generation')
+```
+
+
