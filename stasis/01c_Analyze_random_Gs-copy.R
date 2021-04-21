@@ -9,10 +9,7 @@ library(matrixStats)
 library(boot) 
 library(MCMCglmm)
 
-
 load("~/PATH/TO/DIR/Cemee_Pop_WI/Analysis_Cemee_Pop_WI.RData")
-
-
 ### A6140
 load('~/PATH/TO/DIR/Random_G_Analysis_Cemee_Pop_WI_A6140_.RData')
 
