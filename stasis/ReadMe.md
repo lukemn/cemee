@@ -5,7 +5,7 @@
 Load the transition rates for the CeMEE lines (`Final_merged_data_NGM.txt`), standardize data, adjusting for covariates, and estimate the **G**-matrices for each replicate population. Saves processed trait data to `Cemee_Pop_WI/Analysis_Cemee_Pop_WI.RData`.
 
 #### 01b_Produce_Random_Gs.R
-Load `Cemee_Pop_WI/Analysis_Cemee_Pop_WI.RData`, generate a null distribution of G-matrices by permuting line and block structure, for each replicate population (saving to `Random_**G**_Analysis_Cemee_Pop_WI_%pop_.RData`), and also for subsampling of the  A6140 ancestor (saving to `Random_G_Analysis_Cemee_Pop_WI_A6140_subset.RData`).
+Load `Cemee_Pop_WI/Analysis_Cemee_Pop_WI.RData`, generate a null distribution of **G**-matrices by permuting line and block structure, for each replicate population (saving to `Random_**G**_Analysis_Cemee_Pop_WI_%pop_.RData`), and also for subsampling of the  A6140 ancestor (saving to `Random_G_Analysis_Cemee_Pop_WI_A6140_subset.RData`).
 
 #### 01c_Analyze_random_Gs.R
 Load the observed and null **G**-matrices generated in 01b, plot the posterior summary stats.
@@ -17,7 +17,7 @@ Load the trait data (`Cemee_Pop_WI/Analysis_Cemee_Pop_WI.RData`) to compare obse
 Load `Cemee_Pop_WI/State_frequencies.RData` and the trait data (`Analysis_Cemee_Pop_WI.RData`), generates conditional mean trait values for each population sample, saves to `Cemee_Pop_WI/Analysis_Cemee_Pop_WI_betas_with_freq.RData`.
 
 #### 02c_Compute_TR_estimates_with_freq_males.R
-As above (02c), for males.
+As above (`<02c>`), for males.
 
 #### 02d_Figure1B.R
 Plots Figure 2B from data generated in 02b and 02c.
