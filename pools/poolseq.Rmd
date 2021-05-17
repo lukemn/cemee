@@ -108,7 +108,7 @@ ggplot(refafc, aes(gen, N2, col = g)) +
 
 
 ```{r }
-# distribution of selection coefficients
+# distribution of selection coefficients (min p per bin)
 ss = sapply(ix, function(i) coef(glm(refaf[i,]~gs+reps, family = 'quasibinomial'))[2])
 ssEarly = sapply(ix, function(i) coef(glm(refaf[i,gs<=100]~gs[gs<=100]+reps[gs<=100], family = 'quasibinomial'))[2])
 ssLate = sapply(ix, function(i) coef(glm(refaf[i,gs>100]~gs[gs>100]+reps[gs>100], family = 'quasibinomial'))[2])
@@ -125,7 +125,8 @@ ix = which(padj$g > cut)
 pc = padj[ix,]
 # s all samples: redo pvals using intercept only null
 sfit = mclapply(ix, mc.cores = np, function(i) {
-  m0 = glm(cbind(refcadj[i,],altcadj[i,])~1, family = 'quasibinomial')
+  m0 = glm(cbind(refcadj[i,],altcadj[i,])~reps, family = 'quasibinomial')
+  # m0 = glm(cbind(refcadj[i,],altcadj[i,])~1, family = 'quasibinomial')
   m1 = glm(cbind(refcadj[i,],altcadj[i,])~gs+reps, family = 'quasibinomial')
   list(anova(m0, m1, test="LRT"), coef(m1)[2])
 })
@@ -134,15 +135,28 @@ ss = unlist(lapply(sfit, '[[', 2))
 ss_p = unlist(lapply(sfit, function(x) -log10(x[[1]][2,5])))
 
 # s early (G0-100)
-# update ANOVA
-sfit = mclapply(ix, mc.cores = np, function(i) glm(cbind(refcadj[i,gs<=100],altcadj[i,gs<=100])~gs[gs<=100]+reps[gs<=100], family = 'quasibinomial'))
-ssEarly = unlist(lapply(sfit, function(x) coef(x)[2]))
-ssEarly_p = unlist(lapply(sfit, function(x) coef(summary(x))[2,4]))
+six = gs<=100
+sfit = mclapply(ix, mc.cores = np, function(i) {
+  m0 = glm(cbind(refcadj[i,six],altcadj[i,six])~reps[six], family = 'quasibinomial')
+  m1 = glm(cbind(refcadj[i,six],altcadj[i,six])~gs[six]+reps[six], family = 'quasibinomial')
+  list(anova(m0, m1, test="LRT"), coef(m1)[2])
+})
+ssEarly = unlist(lapply(sfit, '[[', 2))
+ssEarly_p = unlist(lapply(sfit, function(x) -log10(x[[1]][2,5])))
+
 # s late (G100-)
-sfit = mclapply(ix, mc.cores = np, function(i) glm(cbind(refcadj[i,gs>100],altcadj[i,gs>100])~gs[gs>100]+reps[gs>100], family = 'quasibinomial'))
-ssLate = unlist(lapply(sfit, function(x) coef(x)[2]))
-ssLate_p = unlist(lapply(sfit, function(x) coef(summary(x))[2,4]))
-pc = cbind(pc, s = ss, s_p = ss_p, s_early = ssEarly, s_early_p = -log10(ssEarly_p), s_late = ssLate, s_late_p = -log10(ssLate_p))
+six = gs>100
+sfit = mclapply(ix, mc.cores = np, function(i) {
+  m0 = glm(cbind(refcadj[i,six],altcadj[i,six])~reps[six], family = 'quasibinomial')
+  m1 = glm(cbind(refcadj[i,six],altcadj[i,six])~gs[six]+reps[six], family = 'quasibinomial')
+  list(anova(m0, m1, test="LRT"), coef(m1)[2])
+})
+ssLate = unlist(lapply(sfit, '[[', 2))
+ssLate_p = unlist(lapply(sfit, function(x) -log10(x[[1]][2,5])))
+
+pc = cbind(pc, s = ss, s_p = ss_p, 
+           s_early = ssEarly, s_early_p = -log10(ssEarly_p), 
+           s_late = ssLate, s_late_p = -log10(ssLate_p))
 
 Xc = merge(pc, X, sort=F)
 Xcm = t(as.matrix(Xc[,phe$line]))
@@ -151,14 +165,15 @@ cat(sprintf('p %.2f: %s/%s selected sites fixed in phenotyped lines\n', cut, nro
 ixf = paste(snps$chrom, snps$pos) %in% paste(Xc$chrom, Xc$pos)
 reff = data.frame(refaf[ixf,])
 
-# intercept only
+# intercept only null
 fert_fit = GridLMM_GWAS(L1~pop+(1|line), test_formula = ~1, reduced_formula = ~1,
                         data = phe, X = Xcm, X_ID = 'line', relmat = list(line=K), method = 'REML', verbose = F)
 fert_fit$results$beta.lm = unlist(mclapply(1:ncol(Xcm), mc.cores = 8, function(i) coef(lm(phe$L1~Xcm[,i]))[2]))
 qplot(fert_fit$results$beta.4, fert_fit$results$beta.lm)
-# fixed pop
+# fixed pop null
 # fitp = GridLMM_GWAS(L1~pop+(1|line), test_formula = ~pop, reduced_formula = ~1, 
 #                    data = phe, X = Xcm, X_ID = 'line', relmat = list(line=K), method = 'REML')
+
 
 # CF current, G100, G0 allele frequencies
 # all reference-based
