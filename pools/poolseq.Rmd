@@ -1,5 +1,5 @@
 ---
-title: "pq$\alpha$"
+title: "$pqa$"
 author: "LMN"
 date: "23/04/2021"
 output: html_document
@@ -7,34 +7,42 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-require(ggplot2)
-require(data.table)
-require(GridLMM)
-require(parallel)
-require(lme4)
 require(knitr)
+require(parallel)
+require(tidyverse)
+require(data.table)
+require(ggExtra)
+require(GridLMM)
+require(dglm)
+require(lme4)
+require(lmerTest)
+require(sommer)
+require(mgcv)
+require(rptR)
+
 np=6 # parallel threads
 ```
 
-#### CeMEE allele frequency dynamics
-
-### Aim 1: Test concordance in RIL fertility QTL effects and population allele frequency dynamics 
-We have estimates of SNV effects on fitness $\alpha$ from both poolseq, over generations 0-240, and from RIL (mostly A6140) fertility. Are these concordant?  
+### 1: concordance in RIL QTL effects and population allele frequency effects 
+#### fertility
+We have estimates of SNV effects on fitness (which I'll call $s$) from both poolseq, over generations 0-240, and from RIL (mostly A6140) fertility (which I'll call $\alpha$). Are they correlated?  
 
 Here's one approach:  
 ```{r load data}
 # load everything
-load('~/Documents/cemee/poolseq/fertility_tests.rda', verbose=T)
-
+load('~/Documents/cemee/poolseq/v2/fertility_tests.rda', verbose=T)
+snps = rilsnps
+refaf = refcadj/(refcadj+altcadj)
 ### phenotypes
-kable(phe, digits=3)
+kable(h(phe), digits=3)
 
 ### poolseq data
-# SNVs tested (still CeMEE v1. Need to update)
-kable(h(snps))
-# read counts (adjusted for Neff, as in Feder 2012) and allele frequencies
+# SNVs tested (CeMEE diallelic v2, inc. denovo mutations)
+kable(h(rilsnps))
+# read counts (adjusted for Neff, as in Feder 2012, using the mean value for CA pops vs A6140)
+# and allele frequencies
 kable(hh(refcadj))
-# p-values from quasibinomial tests (BH adjusted for multiple comparisons)
+# p-values from quasibinomial tests
 # `full, int, g` are -log10 LRT p-vals for nested tests estimating effects of
 # full : SNV + generation*replicate lineage
 # int  : lineage-specific SNV effects (generation:replicate)
@@ -44,7 +52,7 @@ kable(h(padj), digits = 2)
 kable(table(gs, reps))
 
 ### genotypes, and a GRM (K) built from LD-pruned genotypes
-kable(hh(gt))
+kable(hh(rilgt))
 
 kable(hh(K), digits=3)
 
@@ -58,36 +66,38 @@ The models fit to obtain SNV selection coefficients were:
 
 Where `full` compares the saturated model 2 to model 0 by likelihood ratio, `int` compares the saturated model 2 to model 1, and `g` compares model 1 to model 0.  
 
-Update: I think the above may not be ideal, since the variable `reps` (the experimental lineages) is strongly correlated with generation (`gs`, see the table above). It might be better to regress out generation from replicates, and use the residuals for all models. Or just use an intercept only null. Anyhow, I'm proceeding with the models as they are for now.  
+At a given poolseq threshold, measure SNV effects on fertility by LMM. This is not a full test of concordance, just how well RIL fertility $\alpha$ at candidate poolseq loci predict the estimated selection coefficients $s$.  
 
-At a given poolseq threshold, measure SNV effects on fertility by LMM. This is not a full test of concordance, just how well RIL fertility (which I'll call **R**) effects ($\alpha$) at candidate poolseq loci (**P_{eff**) predict the estimated selection coefficients ($s$).  
+For illustrative purposes, we'll take a single threshold here. This threshold could be optimised later by cross-validation on predictive power.  
 
-For illustrative purposes, we'll take a single threshold here, Bonferroni ($-log10(0.05/N)=$```r -log10(0.05/nrow(snps)) ```). This threshold could be optimised by cross-validation on predictive power.  
-
-I use a LD threshold to initially bin SNVs into somewhat independent loci (e.g., 0.5cM or 1cM, based on $F_2$ map length). This is not ideal, in that LD obviously changes during the experiment, and a single threshold doesn't account for variability in LD. An improvement is then to use the realized RIL LD between these bins in a mixed model.  
+I use a LD threshold to initially bin SNVs into somewhat independent loci (e.g., 0.5cM or 1cM, based on $F_2$ map length). This is not ideal, in that LD obviously changes during the experiment, and a single threshold doesn't account for variability in LD. An improvement is to use the realized RIL LD between these bins in a mixed model.  
 
 
 ```{r }
 # p-value threshold
-cut = -log10(0.05/nrow(snps))
+(cut = -log10(1e-30/nrow(padj)))
 # initial bin width in cM (F2 map scale)
 gwin = 0.5
 
 # illustrative sample covariance at thresholded loci (min p per gwin cM block)
 # a few low Ne outliers based on allele frequencies have been removed
-pc = merge(subset(padj, g > cut), gmap, sort=F)
-pc$b = round(pc$genetic*(1/gwin))/(1/gwin)
+pc = subset(padj, g > cut)
+ggplot(pc, aes(pos/1e6, g)) + geom_point() + facet_grid(.~chrom, scales = 'free') + labs(x='Mb', y = '-log10(p) additive effect of generation')
+
+pc$b = round(pc$cM*(1/gwin))/(1/gwin)
 pcw = merge(pc, aggregate(data = pc, g~chrom+b, max))
-cat(sprintf('p < 10-%.2f: %s bins pass\n', cut, nrow(pcw)))
-ix = which(paste(snps$chrom, snps$pos) %in% paste(pcw$chrom, pcw$pos))
+cat(sprintf('-log10(p) > %.2f: %s markers in %s (%scM) bins pass\n', cut, nrow(pc), nrow(pcw), gwin))
+ix = which(paste(padj$chrom, padj$pos) %in% paste(pcw$chrom, pcw$pos))
+
 covc = reshape2::melt(cov(refaf[ix,]))
 ggplot(covc, aes(Var1, Var2, fill=value)) + geom_tile() + 
   scale_fill_gradient('covariance', high='red', low='blue') + 
   theme(legend.position = 'top', axis.ticks = element_blank(), axis.text.x = element_blank()) + 
-  labs(x='', y='')    
+  labs(x='', y='') + coord_equal()
+# most outliers removed, A660 could be dropped too...
 ```
 
-Most of the allele frequency change happens early. So I'll look at $s$ estimated from all data, and from early (G<=100) and late sample (G>100).  
+Most of the deterministic allele frequency change happens before G140. So I'll look at $s$ estimated from all data, and from early (G<=140) and late samples (G>140), where n=24 each.  
 
 ```{r }
 # allele frequency trajectories
@@ -99,220 +109,789 @@ refafc = reshape2::melt(cbind(pcw[,c('chrom', 'pos', 'g', 'b')], refaf[ix,]),
 refafc <- merge(refafc, data.frame(pop = popn, gen = gs, rep = reps))
 refafc$site = paste(refafc$chrom, refafc$b)
 ggplot(refafc, aes(gen, N2, col = g)) + 
-  geom_line(stat='smooth', aes(group = site), se=F, alpha=0.5, method='loess') + 
+  geom_line(stat='smooth', aes(group = site), se=F, alpha=0.2, method='loess', span=0.5) + 
   theme_classic() + labs(x = 'Generation', y = 'Allele frequency (reference)') + 
   scale_color_gradient('GLM -log10(p)', low = 'blue', high = 'red') + 
   theme(legend.position = 'top')
-    
+
 ```
 
 
-```{r }
+```{r dist s}
 # distribution of selection coefficients (min p per bin)
+early=140
 ss = sapply(ix, function(i) coef(glm(refaf[i,]~gs+reps, family = 'quasibinomial'))[2])
-ssEarly = sapply(ix, function(i) coef(glm(refaf[i,gs<=100]~gs[gs<=100]+reps[gs<=100], family = 'quasibinomial'))[2])
-ssLate = sapply(ix, function(i) coef(glm(refaf[i,gs>100]~gs[gs>100]+reps[gs>100], family = 'quasibinomial'))[2])
+ssEarly = sapply(ix, function(i) coef(glm(refaf[i,gs<=early]~gs[gs<=early]+reps[gs<=early], family = 'quasibinomial'))[2])
+ssLate = sapply(ix, function(i) coef(glm(refaf[i,gs>early]~gs[gs>early]+reps[gs>early], family = 'quasibinomial'))[2])
 ss = cbind(snps[ix,], data.frame(s = ss, early = ssEarly, late = ssLate))
 ggplot(ss, aes(early, late)) + geom_point(stroke=0, alpha=0.5) + 
   geom_abline(aes(intercept=0, slope=1)) + 
   theme_classic() + coord_equal() + geom_rug(size=2, alpha=0.3) +
-  labs(x = expression(italic(s)["(N2, to G100)"]), y = expression(italic(s)["(N2, after G100)"]))
-  
+  labs(x = expression(italic(s)["(N2, to G140)"]), y = expression(italic(s)["(N2, after G140)"]))
+
 ```
+Subset the associated SNVs at our threshold, estimate the poolseq selection coefficients and the RIL effects at these SNVs.  
+
 ```{r }
-# subset the associated SNVs at our threshold
-ix = which(padj$g > cut)
-pc = padj[ix,]
-# s all samples: redo pvals using intercept only null
-sfit = mclapply(ix, mc.cores = np, function(i) {
-  m0 = glm(cbind(refcadj[i,],altcadj[i,])~reps, family = 'quasibinomial')
-  # m0 = glm(cbind(refcadj[i,],altcadj[i,])~1, family = 'quasibinomial')
-  m1 = glm(cbind(refcadj[i,],altcadj[i,])~gs+reps, family = 'quasibinomial')
-  list(anova(m0, m1, test="LRT"), coef(m1)[2])
-})
-# effects (s) and pvalues
-ss = unlist(lapply(sfit, '[[', 2))
-ss_p = unlist(lapply(sfit, function(x) -log10(x[[1]][2,5])))
 
-# s early (G0-100)
-six = gs<=100
-sfit = mclapply(ix, mc.cores = np, function(i) {
-  m0 = glm(cbind(refcadj[i,six],altcadj[i,six])~reps[six], family = 'quasibinomial')
-  m1 = glm(cbind(refcadj[i,six],altcadj[i,six])~gs[six]+reps[six], family = 'quasibinomial')
-  list(anova(m0, m1, test="LRT"), coef(m1)[2])
-})
-ssEarly = unlist(lapply(sfit, '[[', 2))
-ssEarly_p = unlist(lapply(sfit, function(x) -log10(x[[1]][2,5])))
-
-# s late (G100-)
-six = gs>100
-sfit = mclapply(ix, mc.cores = np, function(i) {
-  m0 = glm(cbind(refcadj[i,six],altcadj[i,six])~reps[six], family = 'quasibinomial')
-  m1 = glm(cbind(refcadj[i,six],altcadj[i,six])~gs[six]+reps[six], family = 'quasibinomial')
-  list(anova(m0, m1, test="LRT"), coef(m1)[2])
-})
-ssLate = unlist(lapply(sfit, '[[', 2))
-ssLate_p = unlist(lapply(sfit, function(x) -log10(x[[1]][2,5])))
-
-pc = cbind(pc, s = ss, s_p = ss_p, 
-           s_early = ssEarly, s_early_p = -log10(ssEarly_p), 
-           s_late = ssLate, s_late_p = -log10(ssLate_p))
-
-Xc = merge(pc, X, sort=F)
-Xcm = t(as.matrix(Xc[,phe$line]))
-cat(sprintf('p %.2f: %s/%s selected sites fixed in phenotyped lines\n', cut, nrow(pc)-nrow(Xc), nrow(pc)))
-
-ixf = paste(snps$chrom, snps$pos) %in% paste(Xc$chrom, Xc$pos)
-reff = data.frame(refaf[ixf,])
-
-# intercept only null
-fert_fit = GridLMM_GWAS(L1~pop+(1|line), test_formula = ~1, reduced_formula = ~1,
-                        data = phe, X = Xcm, X_ID = 'line', relmat = list(line=K), method = 'REML', verbose = F)
-fert_fit$results$beta.lm = unlist(mclapply(1:ncol(Xcm), mc.cores = 8, function(i) coef(lm(phe$L1~Xcm[,i]))[2]))
-qplot(fert_fit$results$beta.4, fert_fit$results$beta.lm)
-# fixed pop null
-# fitp = GridLMM_GWAS(L1~pop+(1|line), test_formula = ~pop, reduced_formula = ~1, 
-#                    data = phe, X = Xcm, X_ID = 'line', relmat = list(line=K), method = 'REML')
-
-
-# CF current, G100, G0 allele frequencies
-# all reference-based
-    res = merge(pc, cbind(Xc[,1:2], a = fert_fit$results$beta.4, 
-                          pval = -log10(fert_fit$results$p_value_REML), 
-                          afRIL = 1-(apply(Xc[,phe$line], 1, sum)/nrow(phe)),
-                          af = reff$A6140,
-                          afA0 = apply(reff[,gs==0], 1, mean),
-                          afA100 = reff$A6100,
-                          afCA100 = apply(reff[,gs==240], 1, mean)
-    ), sort=F)
-    # res = merge(pc, cbind(Xc[,1:2], a = fitp$results$beta.2, pval = -log10(fitp$results$p_value_REML.1), af = apply(Xc[,phe$line], 1, sum)/nrow(phe)), sort=F)
-    
-    res$p = res$af
-    res$ssq = (2*res$p*(1-res$p)) * (res$a*res$p + res$a*(1-res$p))^2
-    res$p = res$afA0
-    res$ssqA0 = (2*res$p*(1-res$p)) * (res$a*res$p + res$a*(1-res$p))^2
-    res$p = res$afA100
-    res$ssqA100 = (2*res$p*(1-res$p)) * (res$a*res$p + res$a*(1-res$p))^2
-    res$p = res$afCA100
-    res$ssqCA100 = (2*res$p*(1-res$p)) * (res$a*res$p + res$a*(1-res$p))^2
-    
-    # correlation between SNP effects on fertility and poolseq selection coef
-    # set 
-    res <- merge(res, gmap, sort=F)
-    res$b = round(res$genetic*(1/gwin))/(1/gwin)
-    
-    require(lme4)
-    # weight late/early by p-val for effect of generation
-    res$binf = paste(res$chrom, res$b); len(table(res$binf))
-    fit_null = lmer(s~1+(1|binf), res, weights = s_p, control = lmerControl(optimizer ="bobyqa"))
-    fit = lmer(s~a+(1|binf), res, weights = s_p, control = lmerControl(optimizer ="bobyqa"))
-    fit_earlynull = lmer(s_early~1+(1|binf), res, weights = s_early_p, control = lmerControl(optimizer ="bobyqa"))
-    fit_early = lmer(s_early~a+(1|binf), res, weights = s_early_p, control = lmerControl(optimizer ="bobyqa"))
-    fit_latenull = lmer(s_late~1+(1|binf), res, weights = s_late_p, control = lmerControl(optimizer ="bobyqa"))
-    fit_late = lmer(s_late~a+(1|binf), res, weights = s_late_p, control = lmerControl(optimizer ="bobyqa"))
-    
-    lls = sapply(list(fit_null, fit, fit_earlynull, fit_early, fit_latenull, fit_late), function(x) summary(x)$log)
-    lls[seq(2, 6, 2)]-lls[seq(1, 6, 2)]
-    
-    summary(fit)$AICtab-summary(fit_early)$AICtab
-    summary(fit_late)$AICtab
-    
-    Normpvals(fit)
-    Normpvals(fit_early)
-    Normpvals(fit_late)
-    # 1cM bins (LD is strong early), split by sign
-    # full: t  15.5
-    # early:   17.4
-    # late:    9.6
-    
-
-    # fit with RIL LD matrix between bins (A6140)
-    res_snvs = paste(res$chrom, res$pos)
-    snpix = paste(gt$chrom, gt$pos) %in% res_snvs
-    snpld = t(as.matrix(gt[snpix, grep('^A6|^CA', names(gt)), with=F]))
-    # snpld = t(as.matrix(gt[snpix, grep('^A6', names(gt)), with=F]))
-    colnames(snpld) = paste(res$chrom, res$pos)
-    # 54(50) sites invariant in A6140(+CAs), called in pool
-    snpv = apply(snpld, 2, var); sum(snpv==0)
-    snpld = cor(snpld[,snpv>0])
-    blockld = diag(length(unique(res$binf)))
-    rownames(blockld) = colnames(blockld) = unique(res$binf)
-    for(i in 1:ncol(blockld)){
-      blocki = colnames(blockld)[i]
-      for(j in 1:(i-1)){
-        blockj = colnames(blockld)[j]
-        corij = snpld[colnames(snpld) %in% res_snvs[res$binf==blocki], colnames(snpld) %in% res_snvs[res$binf==blockj]]^2
-        # take maximum correlation seen between SNPs in blocks 
-        # or mean?
-        if(len(corij)==0) {
-          print(c(i,j))
-          blockld[i,j] = blockld[j,i] = NA
-        } else {
-          # blockld[i,j] = blockld[j,i] = max(corij)
-          blockld[i,j] = blockld[j,i] = mean(corij)
-        }
+dump = sprintf("~/Documents/cemee/poolseq/pqa/res_%scM_%2.fp.RData", gwin, cut)
+if(file.exists(dump)){
+  load(dump, verbose=T)
+} else {
+  
+  ix = which(padj$g > cut)
+  pc = padj[ix,]
+  # s all samples: redo pvals using intercept only null
+  sfit = mclapply(ix, mc.cores = np, function(i) {
+    m0 = glm(cbind(refcadj[i,],altcadj[i,])~reps, family = 'quasibinomial')
+    # m0 = glm(cbind(refcadj[i,],altcadj[i,])~1, family = 'quasibinomial')
+    m1 = glm(cbind(refcadj[i,],altcadj[i,])~gs+reps, family = 'quasibinomial')
+    list(anova(m0, m1, test="LRT"), coef(m1)[2])
+  })
+  # effects (s) and pvalues
+  ss = unlist(lapply(sfit, '[[', 2))
+  ss_p = unlist(lapply(sfit, function(x) -log10(x[[1]][2,5])))
+  
+  # s early (G0-140)
+  six = gs<=early
+  sfit = mclapply(ix, mc.cores = np, function(i) {
+    m0 = glm(cbind(refcadj[i,six],altcadj[i,six])~reps[six], family = 'quasibinomial')
+    m1 = glm(cbind(refcadj[i,six],altcadj[i,six])~gs[six]+reps[six], family = 'quasibinomial')
+    list(anova(m0, m1, test="LRT"), coef(m1)[2])
+  })
+  ssEarly = unlist(lapply(sfit, '[[', 2))
+  ssEarly_p = unlist(lapply(sfit, function(x) -log10(x[[1]][2,5])))
+  
+  # s late (G140-)
+  six = gs>early
+  sfit = mclapply(ix, mc.cores = np, function(i) {
+    m0 = glm(cbind(refcadj[i,six],altcadj[i,six])~reps[six], family = 'quasibinomial')
+    m1 = glm(cbind(refcadj[i,six],altcadj[i,six])~gs[six]+reps[six], family = 'quasibinomial')
+    list(anova(m0, m1, test="LRT"), coef(m1)[2])
+  })
+  ssLate = unlist(lapply(sfit, '[[', 2))
+  ssLate_p = unlist(lapply(sfit, function(x) -log10(x[[1]][2,5])))
+  
+  pc = cbind(pc, s = ss, s_p = ss_p, 
+             s_early = ssEarly, s_early_p = ssEarly_p, 
+             s_late = ssLate, s_late_p = ssLate_p)
+  
+  X$chrom = as.character(X$chrom)
+  Xc = as.data.frame(merge(pc, X, sort=F))
+  Xcm = t(as.matrix(Xc[,phe$line]))
+  # remove NAs
+  nas = apply(Xcm, 2, function(x) sum(is.na(x))>0)
+  Xcm = Xcm[,!nas]
+  Xc = Xc[!nas,]
+  # round intermediate HMM probs
+  Xcm[Xcm>0 & Xcm<1] = round(Xcm[Xcm>0 & Xcm<1])
+  cat(sprintf('p %.2f: %s/%s selected sites fixed in phenotyped lines\n', cut, nrow(pc)-nrow(Xc), nrow(pc)))
+  
+  ixf = paste(snps$chrom, snps$pos) %in% paste(Xc$chrom, Xc$pos)
+  reff = data.frame(refaf[ixf,])
+  
+  # get RIL snp effects, against intercept only null
+  # test all but record the RIL MAF for filtering
+  fert_fit = GridLMM_GWAS(L1~pop+(1|line), test_formula = ~1, reduced_formula = ~1,
+                          data = phe, X = Xcm, X_ID = 'line', relmat = list(line=K), 
+                          method = 'REML', verbose = F)
+  
+  # fert_fit$results$beta.lm = unlist(mclapply(1:ncol(Xcm), mc.cores = np, function(i) coef(lm(phe$L1~Xcm[,i]))[2]))
+  # qplot(fert_fit$results$beta.4, fert_fit$results$beta.lm)
+  # fixed pop null
+  # fitp = GridLMM_GWAS(L1~pop+(1|line), test_formula = ~pop, reduced_formula = ~1, 
+  #                    data = phe, X = Xcm, X_ID = 'line', relmat = list(line=K), method = 'REML')
+  
+  
+  # CF current, G100, G0 allele frequencies
+  # all reference-based
+  # `a` is the estimated effect in RILs (the GWAS beta)
+  res = merge(pc, cbind(Xc[,1:2], a = fert_fit$results$beta.4, 
+                        pval = -log10(fert_fit$results$p_value_REML), 
+                        afRIL = 1-(apply(Xc[,phe$line], 1, sum)/nrow(phe)),
+                        af = reff$A6140,
+                        afA0 = apply(reff[,gs==0], 1, mean),
+                        afA100 = reff$A6100,
+                        afCA100 = apply(reff[,gs==240], 1, mean)
+  ), sort=F)
+  # res = merge(pc, cbind(Xc[,1:2], a = fitp$results$beta.2, pval = -log10(fitp$results$p_value_REML.1), af = apply(Xc[,phe$line], 1, sum)/nrow(phe)), sort=F)
+  
+  
+  # correlation between SNP effects on fertility and poolseq selection coef
+  # bin by genetic distance
+  res$b = round(res$cM*(1/gwin))/(1/gwin)
+  res$binf = paste(res$chrom, res$b); len(table(res$binf))
+  
+  # fit using RIL A6140/CA* RIL LD matrix between bins
+  res_snvs = paste(res$chrom, res$pos)
+  snpix = paste(snps$chrom, snps$pos) %in% res_snvs
+  snpld = t(as.matrix(rilgt[snpix, grep('^A6|^CA', colnames(rilgt))]))
+  # snpld = t(as.matrix(rilgt[snpix, grep('^A6', colnames(rilgt))]))
+  colnames(snpld) = paste(res$chrom, res$pos)
+  # sites that are invariant in A6140(+CAs), but called in pool
+  snpv = apply(snpld, 2, var); sum(snpv==0)
+  # downsample if very large
+  if(ncol(snpld)>30000) snpv[seq(1, nrow(snpld), 2)]=0
+  snpld = cor(snpld[,snpv>0])
+  blockld = diag(length(unique(res$binf)))
+  rownames(blockld) = colnames(blockld) = unique(res$binf)
+  for(i in 1:ncol(blockld)){
+    blocki = colnames(blockld)[i]
+    for(j in 1:(i-1)){
+      blockj = colnames(blockld)[j]
+      corij = snpld[colnames(snpld) %in% res_snvs[res$binf==blocki], 
+                    colnames(snpld) %in% res_snvs[res$binf==blockj]]^2
+      # take mean correlation seen between SNPs in blocks 
+      if(len(corij)==0) {
+        # no variable snps in this block
+        print(c(i,j))
+        blockld[i,j] = blockld[j,i] = NA
+      } else {
+        # blockld[i,j] = blockld[j,i] = max(corij)
+        blockld[i,j] = blockld[j,i] = mean(corij)
       }
     }
-    blockld[is.na(blockld)] = mean(ut(blockld), na.rm=T)
-    plot(prcomp(blockld))
-    blockr = reshape2::melt(blockld)
-    blockr$y = factorToInt(factor(blockr$Var2, labels = 1:length(levels(blockr$Var2))))
-    blockr$chrom1 = tstrsplit(blockr$Var1, " ")[[1]]
-    blockr$chrom2 = tstrsplit(blockr$Var2, " ")[[1]]
-    # very close to identity for mean r2 at 1cM, so probably unnecessary
-    ggplot(blockr, aes(Var1, y, fill=value)) + geom_tile() + scale_fill_viridis_c() + facet_grid(chrom2~chrom1, scales='free', space='free')
-    
-    require(sommer)
-    ldfit <- mmer(s~a, random=~vs(binf, Gu=blockld), rcov=~units, data = res, tolparinv = 1e-4, method='AI')
-    ldfit_wt <- mmer(s~a, random=~vs(binf, Gu=blockld), rcov=~units, weights = g, data = res, tolparinv = 1e-4, method='AI')
-    ldfit_null <- mmer(s~1 random=~vs(binf, Gu=blockld), rcov=~units, data = res, tolparinv = 1e-4, method='AI')
-    ldfit_early <- mmer(s_early~a, random=~vs(binf, Gu=blockld), rcov=~units, data = res, tolparinv = 1e-4, method='AI')
-    ldfit_late <- mmer(s_late~a, random=~vs(binf, Gu=blockld), rcov=~units, data = res, tolparinv = 1e-4, method='AI')
-    summary(ldfit)
-    # 1cM, mean r2, t=16
-    # ============================================================
-    #   logLik       AIC     BIC Method Converge
-    # 7.897857 -11.79571 1.59128     AI     TRUE
-    # ============================================================
-    #   Variance-Covariance components:
-    #             VarComp VarCompSE   Zratio Constraint
-    # u:binf.s-s 1.034e-04 1.433e-04   0.7217   Positive
-    # units.s-s  9.754e-05 8.783e-07 111.0507   Positive
-    # ============================================================
-    #   Fixed effects:
-    #   Trait      Effect   Estimate Std.Error t.value
-    # 1     s (Intercept) -0.0006771  0.001177 -0.5753
-    # 2     s           a  0.0166727  0.001043 15.9779
-    
-    # cf fixed eff from lmer above without ld matrix
-    #                      0.01351    0.00087  15.46586
-    
-    # blockld ~ 50% of the variance in s
-    ldfit$sigma$`u:binf`/sum(unlist(ldfit$sigma))
+  }
+  # use global mean for NA (<= 1 marker per bin)
+  blockld[is.na(blockld)] = round(mean(ut(blockld), na.rm=T), 5)
+  # plot(prcomp(blockld))
+  
+  save(res, blockld, gwin, cut, file = dump)
+}
+```
+
+Full LMM at single SNP level, fitting bin as a random effect (I'm not confident this handles pseudoreplication well enough), and testing poolseq selection coefficient overall, early (<=G140) and late (>G140), given that RIL effects are estimated at G140.  
+
+```{r lmm}
+fit_null = lmer(s~1+(1|binf), res, weights = s_p, control = lmerControl(optimizer ="bobyqa"))
+fit = lmer(s~a+(1|binf), res, weights = s_p, control = lmerControl(optimizer ="bobyqa"))
+fit_earlynull = lmer(s_early~1+(1|binf), res, weights = s_early_p, control = lmerControl(optimizer ="bobyqa"))
+fit_early = lmer(s_early~a+(1|binf), res, weights = s_early_p, control = lmerControl(optimizer ="bobyqa"))
+fit_latenull = lmer(s_late~1+(1|binf), res, weights = s_late_p, control = lmerControl(optimizer ="bobyqa"))
+fit_late = lmer(s_late~a+(1|binf), res, weights = s_late_p, control = lmerControl(optimizer ="bobyqa"))
+
+lls = sapply(list(fit_null, fit, fit_earlynull, fit_early, fit_latenull, fit_late), function(x) summary(x)$log)
+# difference in log likelihood for overall, early, late selection coefs
+# against each (intercept only) null
+print(data.frame(s=c('overall', 'early', 'late'), LR=round(lls[seq(2, 6, 2)]-lls[seq(1, 6, 2)],1)))
+
+blockr = reshape2::melt(blockld)
+blockr$y = factorToInt(factor(blockr$Var2, labels = 1:length(levels(blockr$Var2))))
+blockr$chrom1 = tstrsplit(blockr$Var1, " ")[[1]]
+blockr$chrom2 = tstrsplit(blockr$Var2, " ")[[1]]
+
+ggplot(blockr, aes(Var1, y, fill=value)) + geom_tile() + 
+  scale_fill_viridis_c(expression(paste(mean~r^2))) + 
+  facet_grid(chrom2~chrom1, scales='free', space='free') + 
+  theme(axis.text.x = element_blank()) + labs(x='Bin1', y='Bin2')
+
+# slow: 20 minutes per model at ~100 bins/4k markers
+# ldfit <- mmer(s~a, random=~vs(binf, Gu=blockld), rcov=~units, data = res, tolparinv = 1e-4, method='AI')
+# ldfit_null <- mmer(s~1, random=~vs(binf, Gu=blockld), rcov=~units, data = res, tolparinv = 1e-4, method='AI')
+# ldfit_early <- mmer(s_early~a, random=~vs(binf, Gu=blockld), rcov=~units, data = res, tolparinv = 1e-4, method='AI')
+# ldfit_late <- mmer(s_late~a, random=~vs(binf, Gu=blockld), rcov=~units, data = res, tolparinv = 1e-4, method='AI')
+
+# there's still a strong positive association between RIL and poolseq estimated additive effects.
+# and not much different to that ignoring LD 
+# at p<10-35, gwin=0.5: t=44, vs t=48 for full glm
+
+# summary(fit)
+# summary(ldfit)
+# 0.5cm bin, cut=p<10^-35, mean LD
+# ============================================================
+#        logLik       AIC       BIC Method Converge
+# Value 872.504 -1741.008 -1728.349     NR     TRUE
+# ============================================================
+# Variance-Covariance components:
+#              VarComp VarCompSE Zratio Constraint
+# u:binf.s-s 0.0001096 1.691e-05  6.477   Positive
+# units.s-s  0.0000284 6.313e-07 44.989   Positive
+# ============================================================
+# Fixed effects:
+#   Trait      Effect  Estimate Std.Error t.value
+# 1     s (Intercept) -0.005341 0.0013384  -3.991
+# 2     s           a  0.036949 0.0008373  44.129
+# ============================================================
+# Groups and observations:
+#         s
+# u:binf 97
+# ============================================================
+# binned LD ~ 79% of the variance in s
+# ldfit$sigma$`u:binf`/sum(unlist(ldfit$sigma))
 
 ```
 
 
+### 2: change in allele frequency as a function of estimated SNV effect
 
-
-### Aim 2: Test change in allele frequency as a function of estimated SNV effect
-
-$\sigma^2\alpha = d_w/d_t = 2pq * ( p*\alpha + q*\alpha )^2$
-where $alpha$ = average effect (difference in fitness of a single allele copy, wAA-wAa)
-$= (pqs^2)/2$  
+$\sigma^2\alpha = d_w/d_t = 2pq( p\alpha + q\alpha )^2$ (Robertson) $= 2\alpha^2pq$ (Barton)  
+where $\alpha$ = average effect (difference in fitness of a single allele copy, $wAA-wAa$)
+$= \frac{pqs^2}{2}$  
 
 if $dt=1: s^2 = (2 * \sigma^2\alpha) / pq$  
+
+```{r pq alphas}
+
+# A6140 reference
+res$p = res$af
+res$ssq = (2*res$p*(1-res$p)) * (res$a*res$p + res$a*(1-res$p))^2
+# A0 reference
+res$p = res$afA0
+res$ssqA0 = (2*res$p*(1-res$p)) * (res$a*res$p + res$a*(1-res$p))^2
+# A6100 reference
+res$p = res$afA100
+res$ssqA100 = (2*res$p*(1-res$p)) * (res$a*res$p + res$a*(1-res$p))^2
+# CA*100 reference
+res$p = res$afCA100
+res$ssqCA100 = (2*res$p*(1-res$p)) * (res$a*res$p + res$a*(1-res$p))^2
+
+```
+
+For speed, ignore LD between genetic bins here (results are not much inflated above).  
+
+Does including allele frequency change the already strong association between RIL $a$ and poolseq $s$?
+
+Fit LMMs to each of the above timepoints (A0, A6100, A6140, CA100), asking if the inclusion of $\sigma^2\alpha$ improves fit to a model regressing $s$ on $a$. 
+
+***Actually, this doesn't make sense. We know $s$ is correlated with $\alpha$, so this, below, is just testing whether allele frequency is also related to $s$, which it is by definition since we won't detect anything that doesn't change in frequency. So what is it adding? I must be doing/thinking it wrong.***
+
+```{r pqa fits}
+pqa_null = lmer(s~a+(1|binf), res, weights = s_p, control = lmerControl(optimizer ="bobyqa"), REML = F)
+pqa_fit_A0 = lmer(s~a+ssqA0+(1|binf), res, weights = s_p, control = lmerControl(optimizer ="bobyqa"), REML = F)
+pqa_fit_A6100 = lmer(s~a+ssqA100+(1|binf), res, weights = s_p, control = lmerControl(optimizer ="bobyqa"), REML = F)
+pqa_fit_A6140 = lmer(s~a+ssq+(1|binf), res, weights = s_p, control = lmerControl(optimizer ="bobyqa"), REML = F)
+pqa_fit_CA100 = lmer(s~a+ssqCA100+(1|binf), res, weights = s_p, control = lmerControl(optimizer ="bobyqa"), REML = F)
+
+# s (all samples) v MAF (A6140)
+binmax = merge(res, aggregate(data = res, g~binf+sign(s), max))
+binmax$maf = afsToMafs(binmax$af)
+```
+
+And here is the bin level correlations between $s$ and minor allele frequency. Correlation between $|s|$ and MAF is $r=$`r round(cor(abs(binmax$s), binmax$maf), 2)` overall. For $s,\alpha$, $r=$`r round(cor(binmax$s, binmax$a), 2)` and $r=$`r round(cor(abs(binmax$s), abs(binmax$a)), 2)` for absolute effects.  
+
+But note that low-frequency stuff will be estimated very unreliably in the RILs.
+
+```{r mafs}
+ggplot(binmax, aes(maf, abs(s), col = factor(sign(s)))) + geom_point(stroke=0, alpha=0.5) +
+  theme_classic() + labs(x='MAF', y = "|s|") + scale_color_discrete("sign s") + 
+  theme(legend.position = 'top')  + geom_smooth(method='lm', alpha=0.3)
+
+ggplot(binmax, aes(maf, abs(a), col = factor(sign(s)))) + geom_point(stroke=0, alpha=0.5) +
+  theme_classic() + labs(x='MAF', y = "|a|") + scale_color_discrete("sign s") + 
+  theme(legend.position = 'top')  + geom_smooth(method='lm', alpha=0.3)
+
+ggplot(binmax, aes(abs(s), abs(a), col = factor(sign(s)))) + 
+  geom_point(stroke=0, alpha=0.5) +
+  theme_classic() + labs(x='|s|', y = "|a|") + scale_color_discrete("sign s") + 
+  theme(legend.position = 'top')  + geom_smooth(method='lm', alpha=0.3)
+
+anova(lm(a~s*sign(s), binmax), lm(a~s, binmax), test="LRT")
+summary(lm(abs(a)~s*sign(s), binmax))
+```
+
+Model fits are all better than the $\alpha$ null, of course.  
+
+And the model coefficients for $\sigma^2\alpha$ increase with time.    
+
+```{r pqa AIC}
+data.frame(gen=c(0, 100, 140, 240), 
+           d_aic=unlist(lapply(list(pqa_fit_A0, pqa_fit_A6100, pqa_fit_A6140, pqa_fit_CA100), function(x) diff(anova(pqa_null, x, test="LRT")$AIC))), 
+           coef_ssq=unlist(lapply(list(pqa_fit_A0, pqa_fit_A6100, pqa_fit_A6140, pqa_fit_CA100), function(x) coef(summary(x))[3,1]))
+)
+```
+
+#### selection axes.  
+
+```{r data munge and gwas}
+
+gamma_dump = "~/Documents/cemee/poolseq/pqa/gamma_gwas_data.RData"
+if(!file.exists(gamma_dump)){
   
-```{r cars}
-summary(cars)
+  gammas <- fread('~/Downloads/gamma.txt')
+  M=eigen(gammas)$vector
+  load('~/Documents/cemee/phenotypes/transitionRates.rda', verbose = T)
+  traits = c('sf', 'sb', 'fs', 'fb', 'bs', 'bf')
+  ngm <- data.frame(subset(mov, env=='NGM' & line %in% colnames(rilgt)))
+  y = t(apply(as.matrix(ngm[,traits]), 1, function(x) t(M) %*% x))
+  y = scale(y)
+  d = mahalanobis(y, center = F, cov = cov(y))
+  qplot(d, -log10(dchisq(d, df = 6)))
+  # drop 3 A6140 outliers
+  ngm <- subset(ngm, ! line %in% ngm$line[d > 70])
+  ngm = ngm[grep('GA', ngm$line, invert = T),]
+  y = t(apply(as.matrix(ngm[,traits]), 1, function(x) t(M) %*% x))
+  # note: scaling traits to unit variance
+  y_df = cbind(line = ngm$line, 
+               pop = cemeePopsFromLines(ngm$line), 
+               popr = cemeePopRepsFromLines(ngm$line), 
+               date = ngm$date,
+               as.data.frame(scale(y)))
+  y_df = y_df[order(y_df$line, y_df$date),]
+  Xgamma = filterMAF(cbind(rilsnps[,1:2], rilgt), MAFgt = 0, header = 2, lines=unique(ngm$line))
+  Xld_gamma = doPrune(Xgamma[,1:2], Xgamma[,-(1:2)], r2 = 0.99, np=6, window=4000, step=2500)
+  K_gamma = hgsm(Xld_gamma[[2]])
+  # check snps == X
+  snps_gamma = rilsnps[paste(rilsnps$chrom, rilsnps$pos) %in% paste(Xld_gamma[[1]]$chrom,Xld_gamma[[1]]$pos),]
+  Xld_gamma=t(Xld_gamma[[2]])
+  # remove NAs
+  nas = apply(Xld_gamma, 2, function(x) sum(is.na(x))>0)
+  Xld_gamma = Xld_gamma[,!nas]
+  snps_gamma = snps_gamma[!nas,]
+  # round intermediate HMM probs
+  Xld_gamma[Xld_gamma>0 & Xld_gamma<1] = round(Xld_gamma[Xld_gamma>0 & Xld_gamma<1])
+  
+  # get RIL snp effects, against intercept + pop replicate null
+  # nope: intercept only
+  # test all but record the RIL MAF for filtering
+  # greene! or drop popr
+  gamma_fits = do.call(rbind, lapply(1:6, function(i) {
+    # fiti = GridLMM_GWAS(as.formula(sprintf("V%s~popr+(1|line)", i)), 
+    #                     test_formula = ~1+popr, reduced_formula = ~1,
+    #                     data = y_df, X = Xld_gamma, 
+    #                     X_ID = 'line', relmat = list(line=K_gamma), 
+    #                     method = 'REML', verbose = T)
+    fiti = GridLMM_GWAS(as.formula(sprintf("V%s~1+(1|line)", i)), 
+                        test_formula = ~1, reduced_formula = ~1,
+                        data = y_df, X = Xld_gamma, 
+                        X_ID = 'line', relmat = list(line=K_gamma), 
+                        method = 'REML', verbose = T)
+    cbind(snps_gamma[,-(3:4)], data.frame(dim=i, a = fiti$results$beta.2,
+                                          pval = -log10(fiti$results$p_value_REML)))
+  }))
+  
+  save(snps_gamma, K_gamma, Xld_gamma, y_df, gamma_fits, file = gamma_dump)
+} else {
+  load(gamma_dump, verbose=T)
+}
+
+# mean trait values by generation: there's strong differentiation
+# for the GWAS, I've ignored this (intercept only null)
+ym = as.data.frame(melt(as.data.table(y_df), 1:4, variable.name='axis'))
+ggplot(ym, aes(axis, value, col = pop)) + stat_summary() + theme_bw()
+
+# repeatabilities for lines and populations
+lapply(split(ym, ym$axis), function(x) rpt(value~1+(1|line)+(1|popr), grname = c('line', 'popr'), data = x, datatype = 'Gaussian', nboot = 0)$R)
+
+# correlation between SNP effects on fertility and poolseq selection coef
+# bin by genetic distance
+gamma_fits$b = round(gamma_fits$cM*(1/gwin))/(1/gwin)
+gamma_fits$binf = paste(gamma_fits$chrom, gamma_fits$b); len(table(gamma_fits$binf))
+
+# subset to thresholded poolseq tests
+gamma_fits$cut = paste(gamma_fits$chrom, gamma_fits$pos) %in% paste(res$chrom, res$pos)
+gamma_s = merge(as.data.frame(subset(gamma_fits, cut)), res[,c('chrom', 'pos', 'g', 's', 's_p', 's_early', 's_early_p', 's_late', 's_late_p', 'af', 'afA0', 'afA100', 'afCA100')], sort=F)
+
+p = gamma_s$af
+gamma_s$ssq = (2*p*(1-p)) * (gamma_s$a*p + gamma_s$a*(1-p))^2
+# A0 reference
+p = gamma_s$afA0
+gamma_s$ssqA0 = (2*p*(1-p)) * (gamma_s$a*p + gamma_s$a*(1-p))^2
+# A6100 reference
+p = gamma_s$afA100
+gamma_s$ssqA100 = (2*p*(1-p)) * (gamma_s$a*p + gamma_s$a*(1-p))^2
+# CA*100 reference
+p = gamma_s$afCA100
+gamma_s$ssqCA100 = (2*p*(1-p)) * (gamma_s$a*p + gamma_s$a*(1-p))^2
+
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+```{r selection axes: s~a tests}
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+# fits by trait, SNP-level
+# inclusion of sigma^2a over a alone
+axis_fits_ssq = do.call(rbind, lapply(split(gamma_s, gamma_s$dim), function(x){
+
+  pqa_null = lmer(s~a+(1|binf), x, weights = s_p, 
+                  control = lmerControl(optimizer ="bobyqa"), REML = F)
+  pqa_fit_A0 = lmer(s~a+ssqA0+(1|binf), x, weights = s_p, 
+                    control = lmerControl(optimizer ="bobyqa"), REML = F)
+  pqa_fit_A6100 = lmer(s~a+ssqA100+(1|binf), x, weights = s_p, 
+                       control = lmerControl(optimizer ="bobyqa"), REML = F)
+  pqa_fit_A6140 = lmer(s~a+ssq+(1|binf), x, weights = s_p, 
+                       control = lmerControl(optimizer ="bobyqa"), REML = F)
+  pqa_fit_CA100 = lmer(s~a+ssqCA100+(1|binf), x, weights = s_p, 
+                     control = lmerControl(optimizer ="bobyqa"), REML = F)
+  
+  data.frame(dim = x$dim[1], gen=c(0, 100, 140, 240), 
+             d_aic=unlist(lapply(list(pqa_fit_A0, pqa_fit_A6100, pqa_fit_A6140, pqa_fit_CA100), function(x) diff(anova(pqa_null, x, test="LRT")$AIC))), 
+             coef_ssq=unlist(lapply(list(pqa_fit_A0, pqa_fit_A6100, pqa_fit_A6140, pqa_fit_CA100), function(x) coef(summary(x))[3,1]))
+  )
+  
+}))
+
+# inclusion of a alone
+axis_fits_a = do.call(rbind, lapply(split(gamma_s, gamma_s$dim), function(x){
+  pqa_null = lmer(s~1+(1|binf), x,  REML = F)
+  pqa_fit = lmer(s~a+(1|binf), x, REML = F)
+  data.frame(dim = x$dim[1], d_aic = diff(anova(pqa_null, pqa_fit, test="LRT")$AIC), 
+             coef_a=coef(summary(pqa_fit))[2,1])
+}))
+
+# bin level
+# s (all samples) v MAF (A6140)
+binmax_gamma = merge(gamma_s, aggregate(data = gamma_s, g~binf+sign(s)+dim, max))
+
+lapply(split(binmax_gamma, binmax_gamma$dim), function(x) {
+  anova(lm(abs(a)~s*sign(s), x), lm(abs(a)~s, x), test="LRT")
+  summary(lm(abs(a)~s*sign(s), x))
+})
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+The correlations between $s$ and $\alpha$ vary with $\gamma$ dimension. At the bin level (conservative): $r=$`r round(sapply(split(binmax_gamma, binmax_gamma$dim), function(x) cor(x$s, x$a)), 2)` (and $r$=`r round(sapply(split(binmax_gamma, binmax_gamma$dim), function(x) cor(abs(x$s), abs(x$a))), 2)` for absolute effects). Note the correlations are much lower for some axes for signed vs. absolute effects.    
+
+In the plot below (SNP level regression on `r length(unique(paste(gamma_s$chrom, gamma_s$pos)))` markers thresholded by $s$ p-value, with a random bin effect), all axes but 3 and 4 show some association ($\Delta AIC > 3$), with axis 6 under stabilising selection by far the strongest!   
+
+Inclusion of $\sigma^2\alpha$ rarely improves the model fit over $\alpha$ alone, except for the first dimension. A6100 allele frequency seems to be the most correlated.  
+
+```{r selection: pqa fits}
+# not traits were variance standardised, so the coefficients are relative
+ggplot(axis_fits_a, aes(factor(dim), coef_a, size=-d_aic)) + geom_point() + theme_bw() +
+  labs(x = expression(paste(gamma~'axis')), y = expression(paste(alpha~'coefficient'))) +
+  scale_size(expression(paste(-Delta~"AIC")))
+
+ggplot(axis_fits_ssq, aes(gen, d_aic)) + geom_point() + facet_grid(.~dim) + theme_bw() +
+  labs(x = expression(paste(sigma^2~alpha~'generation')), y = expression(paste(Delta~"AIC")))
+
+# binned correlations
+ggplot(binmax_gamma, aes(abs(s), abs(a), col = factor(sign(s)))) + 
+  geom_point(stroke=0, alpha=0.5) +
+  theme_classic() + labs(x='|s|', y = "|a|") + scale_color_discrete("sign s") + 
+  theme(legend.position = 'top')  + geom_smooth(method='lm', alpha=0.3) +
+  facet_grid(.~dim)
+```
+
+
+## 3: GxGxE
+
+The above is all on additive effects, but we know that there's abundant epistasis for fertility (including between alleles with weak additive effects).  
+
+The amount of negative epistasis for new mutations is an important quantity for evolution. We can make the case that moving to a new environment (NGMN-adapted RILs tested on NaCl) is similar to (multiple) new mutations.  
+
+Below, we test for directional epistasis between all markers with additive effects (again, at a given threshold, and using either RIL $a$ or poolseq $s$).  
+
+Connection between above and below needs work!   
+
+```{r load data and get RIL effects}
+
+# using BLUPs in NGM (quasipoisson) and NaCl (negative binomial)
+load('~/Documents/cemee/phenotypes/fertility.rda', verbose = T)
+fert = ecoefs[order(ecoefs$line),]
+fert = subset(fert, line %in% colnames(X))
+
+# this includes 58 G* RILs as well as 160 A6140
+# confirm the below holds for A6140 only
+table(cemeePopRepsFromLines(unique(fert$line)))
+
+ldsnps = Xld[[1]]
+ldsnps$cM = X$cM[paste(X$chrom, X$pos) %in% paste(ldsnps$chrom, ldsnps$pos)]
+Xt = t(Xld[[2]])
+# remove NAs
+nas = apply(Xt, 2, function(x) sum(is.na(x))>0)
+Xt = Xt[,!nas]
+ldsnps = ldsnps[!nas,]
+# convert intermediate HMM probs
+Xt[Xt>0 & Xt<1] = round(Xt[Xt>0 & Xt<1])
+
+doGWAS = function(){
+  # estimate RIL SNP effects on NGM and NaCl
+  # using MAF>5% and minimally pruned of LD (r2<0.99)
+  
+  # exclude markers within 1cM of the focal marker from the GRM
+  prox = unlist(parallel::mclapply(split(cbind(ix=1:ncol(Xt), ldsnps), ldsnps$chrom), mc.cores = np, function(x) lapply(x$ix, function(i) which(abs(x$cM-x$cM[i])<1))), recursive = F)
+  
+  # snp h2 = 0.3
+  fitngm <- GridLMM_GWAS(fertility~1 + (1|line), test_formula = ~1, reduced_formula = ~1, 
+                         data=subset(fert, env=='NGM'), X = Xt, X_ID = 'line', 
+                         relmat = list(line=K), proximal_markers = prox)
+  
+  # snp h2 = 0.19
+  fitnacl <- GridLMM_GWAS(fertility~1 + (1|line), test_formula = ~1, reduced_formula = ~1, 
+                          data=subset(fert, env!='NGM'), X = Xt, X_ID = 'line', 
+                          relmat = list(line=K), proximal_markers = prox)
+  # snp h2 = 0.69
+  # fitngm_a <- GridLMM_GWAS(fertility~1 + (1|line), test_formula = ~1, reduced_formula = ~1, 
+  #                          data=subset(fert, env=="NGM"), X = Xt, X_ID = 'line', 
+  #                          relmat = list(line=K^2))
+  # snp h2 = 1
+  # fitnacl_a <- GridLMM_GWAS(fertility~1 + (1|line), test_formula = ~1, reduced_formula = ~1, 
+  #                           data=subset(fert, env!="NGM"), X = Xt, X_ID = 'line', 
+  #                           relmat = list(line=K^2))
+  
+  ril_beta = rbind(cbind(ldsnps, beta = fitngm$results$beta.2, p = fitngm$results$p_value_REML, env = "NGM"),
+                   cbind(ldsnps, beta = fitnacl$results$beta.2, p = fitnacl$results$p_value_REML, env = "NaCl"))
+  
+  ggplot(subset(ril_beta, p<0.1), aes(pos/1e6, -log10(p))) + geom_point(alpha=0.5, stroke=F) +
+    facet_grid(env~chrom, scales = 'free_x') + theme_classic()
+  save(ril_beta, file = '~/Documents/cemee/qtl/cemee_v2_fertility_gwas_ld.RData')
+}
+
+load('~/Documents/cemee/qtl/cemee_v2_fertility_gwas_ld.RData', verbose=T)
+
+```
+
+
+The function `syne` below test all pairwise interactions between a set of diallelic markers at a given threshold in a given environment. As before, to approximately account for LD we take the smallest p-value in bin=`r gwin` cM blocks (i.e., ignoring the mean additive effect within a bin).
+
+I split effects by effect direction for reference alleles and alternate alleles, which might differ due to lab adaptation, or because this correlates with allele frequency. So in the below `ref` means QTL with effects where the reference allele decreases fertility, `alt` means the non-N2 allele decreases fertility.  
+
+Still need to compare with QTL from poolseq.   
+
+```{r dir epi}
+
+syne <- function(ldsnps, ril_beta, fert, Xt, thresh=0.01, bin=0.5, minclass=4, np=6, ev='NGM'){
+  
+  # return: interaction coefficients, separately by direction of (reference-based)
+  # additive effect (in case commoner N2 alleles are doing something different to rare wild alleles)
+  
+  fertd = subset(fert, env==ev)
+  fertd = fertd[order(fertd$line),]
+  
+  # alt deleterious
+  sub = subset(ril_beta, p<thresh & beta<0 & env==ev)
+  sub$b = round(sub$cM*(1/bin))/(1/bin)
+  subdel = merge(sub, aggregate(data = sub, p~b+chrom, min))
+  df = subdel[!duplicated(subdel[,c('chrom','p', 'b')]),]
+  ix = which(paste(ldsnps$chrom, ldsnps$pos) %in% paste(df$chrom, df$pos))
+  snps_ = ldsnps[ix,]
+  X_ = Xt[,ix]
+  pw = expand.grid(1:nrow(df), 1:nrow(df))
+  pw = pw[pw$Var1!=pw$Var2,]
+  altd = do.call(rbind, mclapply(1:nrow(pw), mc.cores=np, function(x) {
+    i = pw$Var1[x]
+    j = pw$Var2[x]
+    ix = which((snps_$chrom==df$chrom[i] & snps_$pos==df$pos[i])|(snps_$chrom==df$chrom[j] & 
+                                                                    snps_$pos==df$pos[j]))
+    dx = cbind(data.frame(X_[,ix]), y=fertd$fertility)
+    dx = dx[dx$X1%%1==0 & dx$X2%%1==0,]
+    if((prod(dim(table(dx[,-3])))==4) & (min(table(dx[,-3]))>=minclass)){
+      # ggplot(dx, aes(X1, y, col=factor(X2))) + stat_summary() +
+      #  geom_smooth(method='lm', se=F)
+      fit = lm(y~X1*X2, dx)
+      fit0 = lm(y~X1+X2, dx)
+      data.frame(r_full = summary(fit)$adj, 
+                 r_add = summary(fit0)$adj, 
+                 coef = coef(fit)[4])
+    } else {
+      data.frame(r_full = NA, r_add = NA, coef = NA)
+    }
+  }))
+  altd = cbind(pw, altd)
+  alt = df
+  
+  # N2 del
+  sub = subset(ril_beta, p<thresh & beta>0 & env==ev)
+  sub$b = round(sub$cM*(1/bin))/(1/bin)
+  subdel = merge(sub, aggregate(data = sub, p~b+chrom, min))
+  df = subdel[!duplicated(subdel[,c('chrom','p', 'b')]),]
+  ix = which(paste(ldsnps$chrom, ldsnps$pos) %in% paste(df$chrom, df$pos))
+  snps_ = ldsnps[ix,]
+  X_ = Xt[,ix]
+  pw = expand.grid(1:nrow(df), 1:nrow(df))
+  pw = pw[pw$Var1!=pw$Var2,]
+  refd = do.call(rbind, mclapply(1:nrow(pw), mc.cores=np, function(x) {
+    i = pw$Var1[x]
+    j = pw$Var2[x]
+    ix = which((snps_$chrom==df$chrom[i] & snps_$pos==df$pos[i])|(snps_$chrom==df$chrom[j] &
+                                                                    snps_$pos==df$pos[j]))
+    dx = cbind(data.frame(X_[,ix]), y=fertd$fertility)
+    dx = dx[dx$X1%%1==0 & dx$X2%%1==0,]
+    if((prod(dim(table(dx[,-3])))==4) & (min(table(dx[,-3]))>=minclass)){
+      # ggplot(dx, aes(X1, y, col=factor(X2))) + stat_summary() +
+      #  geom_smooth(method='lm', se=F)
+      fit = lm(y~X1*X2, dx)
+      fit0 = lm(y~X1+X2, dx)
+      data.frame(r_full = summary(fit)$adj, 
+                 r_add = summary(fit0)$adj, 
+                 coef = coef(fit)[4])  
+    } else {
+      data.frame(r_full = NA, r_add = NA, coef = NA)
+    }
+  }))
+  refd = cbind(pw, refd)
+  ref = df
+  
+  o = list(alt = list(cbind(altd, env=ev, cut=thresh, pol='alt'), alt), 
+           ref = list(cbind(refd, env=ev, cut=thresh, pol='ref'), ref))
+  
+  
+  d = rbind(o$alt[[1]], o$ref[[1]])
+  pd <- ggplot(d, aes(coef, r_full-r_add, col = factor(env))) + geom_point()
+  pmarg = ggMarginal(pd, type="violin", margins='x', draw_quantiles = c(0.25, 0.5, 0.75))
+  o = c(o, pmarg)
+  o
+}
+
+```
+
+In general:  
+
+-- interactions between additive QTL are clearly negative on average
+-- interactions between QTL (in RILs, for that environment) are much more negative on NaCl (and vary more) 
+-- interactions between non-reference alleles on NaCl are the most negative/variable of all (though there are many more than for reference alleles).  
+
+
+```{r epistasis distributions}
+
+# look at three thresholds, across NGM and NaCl
+
+syn_eff = list(syne(ldsnps, ril_beta, fert, Xt, thresh = 0.001),
+               syne(ldsnps, ril_beta, fert, Xt, thresh = 0.005),
+               syne(ldsnps, ril_beta, fert, Xt, thresh = 0.01),
+               syne(ldsnps, ril_beta, fert, Xt, thresh = 0.001, ev = "NaCl"),
+               syne(ldsnps, ril_beta, fert, Xt, thresh = 0.005, ev = "NaCl"),
+               syne(ldsnps, ril_beta, fert, Xt, thresh = 0.01, ev = "NaCl"))
+
+effs = do.call(rbind, lapply(syn_eff, function(x) rbind(x$alt[[1]], x$ref[[1]])))
+
+# number of bins tested per threshold/env
+do.call(rbind, lapply(syn_eff, function(x) data.frame(n_alt=nrow(x$alt[[2]]), 
+                                                      n_ref=nrow(x$ref[[2]]), 
+                                                      env=x$alt[[1]]$env[1], 
+                                                      threshold=x$alt[[1]]$cut[1])))
+
+ggplot(effs, aes(factor(cut), coef, col = env)) + 
+  geom_violin(draw_quantiles = c(0.25, 0.5, 0.75)) + 
+  labs(x = 'GWAS threshold', y = 'Interaction coefficient') + theme(legend.position = 'top') +
+  scale_color_discrete("") + facet_grid(.~pol)
+```
+
+If we want to look at change in fitness, we're going to need to revert to using worm size. We can at least justify it directly as a good proxy in the A6140, and then indirectly based on the increase in size across populations and derived RILs.  
+
+```{r size in populations}
+load('~/Documents/cemee/phenotypes/CeMEE_simpleLocomotionTraits_correctedPlateMeansERes.RData', verbose = T)
+
+# among replicate variance is decreasing and varies with sex
+# sex~g is weak for mean
+# but stronger for dispersion
+ltraits = c('ln.area.F', # though males differ in length v width relative to founders
+            'ln.velocity.F')   # dramatic divergence from founders, and herms (only) declining
+popm = subset(dfoorp, pop=='populations')
+fnd = subset(dfoorp, pop=='founders')
+popm = rbind(popm, fnd)
+# these two traits show strong phenotypic correlation, yet divergent sex-specific evolution
+round(cor(popm[,c('ln.area.F', 'length.F', 'width.F', 'ln.velocity.F')])^2, 3)
+
+popm$maleDep = F; popm$maleDep[grep('noM', popm$line)] = T
+popm$line = gsub('noM', '', popm$line)
+# exclude male depleted samples
+popm = subset(popm, !maleDep)
+popm$g = 0; popm$g[grep("CA", popm$line)] = 140+as.numeric(substr(popm$line[grep("CA", popm$line)], 4, 6)); popm$g[grep("^A|^D", popm$line)] = substr(popm$line[grep("^A|^D", popm$line)], 3, 5)
+popm$g = as.numeric(popm$g)
+popm$g[popm$pop=='founders']= -10
+popm = popm[grep('^M', popm$line, invert = T),]; popm$g[popm$line=='A0']=0
+popm = melt(as.data.table(popm[,c('line', 'pop', 'g', 'sex', ltraits)]), 1:4, variable.name='trait')
+popm$x = paste(popm$pop, popm$sex)
+ggplot(popm, aes(g, value, shape=sex, group=x)) + stat_summary() + 
+  geom_smooth(method='lm') + facet_grid(trait~., scales='free') + 
+  geom_vline(aes(xintercept=-5), alpha=0.2, size=2) + 
+  geom_vline(aes(xintercept=142.5), alpha=0.2, size=2) +
+  theme_classic() + 
+  theme(legend.position = 'top') + labs(x = 'Generation', y = 'Trait value')
+```
+Clear evidence for population hermaphrodite size increasing from founders. Suggestive mean effects only when excluding the founders. 
+
+```{r population means}
+lapply(split(popm, popm$trait), function(x) summary(lmer(value~sex*g+(1|line), data=x)))
+
+# excluding founders
+lapply(split(popm, popm$trait), function(x) summary(lmer(value~sex*g+(1|line), data=subset(x, g>0))))
+
+```
+
+Population (within-plate) variance in hermaphrodite size is increasing. But it is clearly decreasing for RILs (see below), which I'm more inclined to believe.  
+
+Variance among replicates decreases with time, but I'm not sure what to make of that.  
+
+```{r population within-plate variance}
+# these are the per track variances for locomotion traits
+ppsv = subset(dfoorvp, popr %in% c('populations', 'founders'))
+# these are the per track means
+ppsm = subset(dfoorp, popr %in% c('populations', 'founders'))
+# take mean per block, and get residual variance from nonlinear regression on mean, by sex
+mres <- lapply(traito, function(i) {
+  df = na.exclude(cbind(ppsm[,c('line', 'sex', 'pop', 'date', 'block')], y = ppsv[,i], x = ppsm[,i]))
+  df = do.call(rbind, lapply(split(df, paste(df$line, df$sex, df$date)), function(x) {
+    if(nrow(x)>1){
+      cbind(x[1,c('line', 'sex', 'pop', 'date', 'block')], y=mean(x$y), x = mean(x$x))
+    } else {
+      x
+    }
+  }))
+  df = do.call(rbind, lapply(split(df, df$sex), function(z) {
+    fit = gam(y~s(x, bs="cs"), z, family = 'gaussian')
+    # print(c(i, z$sex[1]))
+    # print(anova(fit)$p.table[4])
+    z$res <- mean(z$y) + resid(fit)
+    z
+  }))
+  names(df)[names(df)=='res'] = i
+  df[,c('line', 'sex', 'pop', 'date', 'block', i)]
+}) 
+pps = mres %>% Reduce(function(d1,d2) inner_join(d1,d2, by=c('line', 'sex', 'pop', 'block', 'date')), .)
+pps$pop <- pps$popr <- pps$line
+subp = pps
+subp$pop <- gsub('noM', '', subp$pop)
+traits = traito
+pmx <- subp %>% group_by(line, sex, pop, popr, block) %>% summarise_at(traits, function(x) mean(x, na.rm=T))
+pmx$gen <- 0
+pmx$gen[grep('A..', pmx$pop)] <- as.numeric(gsub('A.', '', pmx$pop[grep('A..', pmx$pop)]))
+pmx$gen[grep('CA', pmx$pop)] <- as.numeric(gsub('CA.', '', pmx$pop[grep('CA', pmx$pop)]))+140
+pmx$gen[grep('^D', pmx$pop)] <- as.numeric(gsub('^D.', '', pmx$pop[grep('^D', pmx$pop)]))+140
+pmx$gen[grep('^M', pmx$pop)] <- as.numeric(gsub('^M.', '', pmx$pop[grep('^M', pmx$pop)]))+140
+pmx$gen[pmx$line %in% cemeeFounders] = -5
+table(pmx$pop, pmx$gen)
+
+# mating system. ignoring M, D here
+pmx$mate = 'A'; pmx$mate[grep('^D', pmx$pop)] = "D"; pmx$mate[grep('^M', pmx$pop)] = "M"
+pmx$mate[pmx$line %in% cemeeFounders] = 'F'
+pmx$mate = factor(pmx$mate)
+pmx$mate = factor(pmx$mate, levels=c('F', 'A', 'D', 'M'))
+pmx$mate = factor(pmx$mate, labels=c('Founder', 'Andro.', 'Di.', 'Mono.'))
+
+ggplot(subset(pmx, mate %in% c("Founder", "Andro.")), aes(gen, ln.area.F, col=sex)) + 
+  geom_point(alpha=0.5, stroke=0) + stat_summary() + 
+  theme_classic() + geom_smooth(method='lm') + 
+  scale_x_continuous(breaks = scales::pretty_breaks(n=2)) + 
+  labs(x = "Generation", y = "Within-plate variance (residuals)") +
+  theme(legend.position = 'top') + scale_color_discrete("")
+
+# all data. founders are not so different here
+summary(lmer(ln.area.F~sex*gen+(1|line), data=subset(pmx, mate %in% c("Founder", "Andro."))))
+
+```
+
+RIL mean size increases, and within-plate variance decreases (despite the increase in mean, which has not been regressed out here).  
+
+```{r RIL mean and variance}
+
+# CeMEE v1.2 paper: e.g. traits curvature, velocity, size (mean/variance) on NGM
+
+# plate means
+pm <- subset(dfoorp, !pop %in% c('founders', 'MA', 'populations'))
+pm$popr = factor(pm$popr); pm$popr = factor(pm$popr, levels = unique(pm$popr)[c(1,3,5,7,2,4,6,8:10)])
+pm$pop = factor(pm$pop); pm$pop = factor(pm$pop, levels = unique(pm$pop)[c(1,3,2,4)])
+pm$gen = as.numeric(substr(pm$pop, 3, 5)); pm$gen[pm$gen==140]=0
+
+ggplot(pm, aes(popr, ln.area.F)) + stat_summary() + facet_grid(.~pop, scales='free') + 
+  theme_classic() + theme(axis.text.x = element_text(angle=90), axis.ticks.x = element_blank())
+
+# mean test
+summary(lmer(ln.area.F~gen+(1|line)+(1|date), data=subset(pm, !pop=='GA50')))
+
+# within-plate variance
+pm <- subset(dfoorvp, !pop %in% c('founders', 'MA', 'populations'))
+pm$popr = factor(pm$popr); pm$popr = factor(pm$popr, levels = unique(pm$popr)[c(1,3,5,7,2,4,6,8:10)])
+pm$pop = factor(pm$pop); pm$pop = factor(pm$pop, levels = unique(pm$pop)[c(1,3,2,4)])
+pm$gen = as.numeric(substr(pm$pop, 3, 5)); pm$gen[pm$gen==140]=0
+
+# variance test
+ggplot(pm, aes(popr, ln.area.F)) + stat_summary() + facet_grid(.~pop, scales='free') + 
+  theme_classic() + theme(axis.text.x = element_text(angle=90), axis.ticks.x = element_blank())
+
+summary(lmer(ln.area.F~gen+(1|line)+(1|date), data=subset(pm, !pop=='GA50')))
+```
+
+
+
