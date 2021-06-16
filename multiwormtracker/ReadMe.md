@@ -3,9 +3,9 @@
 *male/* contains code to fit a pretrained extreme gradient-boosting model to parsed MWT data to classify tracks as male or hermaphrodite/female.
 
 Dependencies:
-greadlink (brew install coreutils)
+greadlink (brew install coreutils; softlink readlink to greadlink)
 
-R:optparse, xgboost (tested with 1.2.0.1), data.table, reshape2
+R:optparse, xgboost (tested with 1.2.0.1), data.table, reshape2, plyr
 
 JDK
 
